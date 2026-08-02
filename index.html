@@ -615,9 +615,10 @@ async function loadReferenceData(){
 
   const chipContainer = $('#role-chips');
   chipContainer.innerHTML = '';
+  activeRoles = new Set(rolesRef.filter(r => r.code !== 'retraite').map(r => r.code));
   rolesRef.forEach(r => {
     const chip = document.createElement('button');
-    chip.className = 'chip';
+    chip.className = 'chip' + (activeRoles.has(r.code) ? ' active' : '');
     chip.textContent = r.libelle;
     chip.dataset.code = r.code;
     chip.addEventListener('click', () => {
@@ -906,22 +907,30 @@ $('#sort-select').addEventListener('change', render);
 $('#open-filters').addEventListener('click', () => $('#filter-overlay').classList.add('open'));
 $('#filters-close').addEventListener('click', () => $('#filter-overlay').classList.remove('open'));
 $('#filters-reset').addEventListener('click', () => {
-  activeRoles.clear(); activeAdn.clear(); activeTexture.clear(); activeSaison.clear();
+  activeAdn.clear(); activeTexture.clear(); activeSaison.clear();
+  activeRoles = new Set(rolesRef.filter(r => r.code !== 'retraite').map(r => r.code));
   Object.keys(thresholds).forEach(k => thresholds[k] = 0);
   $('#category-filter').value = '';
   $('#sous-categorie-filter').value = '';
   populateSousCategorieFilter();
   $('#marque-filter').value = '';
-  $$('#role-chips .chip, #adn-chips .chip, #texture-chips .chip, #saison-chips .chip, .thresh-btn').forEach(c => c.classList.remove('active'));
+  $$('#adn-chips .chip, #texture-chips .chip, #saison-chips .chip, .thresh-btn').forEach(c => c.classList.remove('active'));
+  $$('#role-chips .chip').forEach(c => c.classList.toggle('active', activeRoles.has(c.dataset.code)));
   render(); updateFilterBadge();
 });
+
+function isDefaultRoles(){
+  const nonRetraite = rolesRef.filter(r => r.code !== 'retraite').map(r => r.code);
+  return activeRoles.size === nonRetraite.length && nonRetraite.every(c => activeRoles.has(c));
+}
 
 function updateFilterBadge(){
   let count = 0;
   if($('#category-filter').value) count++;
   if($('#sous-categorie-filter').value) count++;
   if($('#marque-filter').value) count++;
-  count += activeRoles.size + activeAdn.size + activeTexture.size + activeSaison.size;
+  if(!isDefaultRoles()) count++;
+  count += activeAdn.size + activeTexture.size + activeSaison.size;
   count += Object.values(thresholds).filter(v => v > 0).length;
   const badge = $('#filter-badge');
   if(count > 0){ badge.style.display = 'inline'; badge.textContent = count; }
