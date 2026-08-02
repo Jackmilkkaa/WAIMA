@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Waïma Wardrobe — Test pipeline</title>
+<style>
+  body { font-family: -apple-system, sans-serif; background: #111; color: #eee; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  .card { text-align: center; padding: 2rem; }
+  #status { margin-top: 1rem; font-size: 1.1rem; }
+  .ok { color: #4ade80; }
+  .err { color: #f87171; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Waïma Wardrobe</h1>
+  <p>Pipeline GitHub → Netlify : test de déploiement</p>
+  <div id="status">Vérification Supabase…</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const statusEl = document.getElementById('status');
+  if (typeof supabase !== 'undefined') {
+    statusEl.textContent = '✅ Client Supabase chargé correctement';
+    statusEl.className = 'ok';
+  } else {
+    statusEl.textContent = '❌ Client Supabase non chargé';
+    statusEl.className = 'err';
+  }
+</script>
+</body>
+</html>
