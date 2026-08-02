@@ -3,32 +3,689 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Waïma Wardrobe — Test pipeline</title>
+<title>Waïma — Garde-robe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  body { font-family: -apple-system, sans-serif; background: #111; color: #eee; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-  .card { text-align: center; padding: 2rem; }
-  #status { margin-top: 1rem; font-size: 1.1rem; }
-  .ok { color: #4ade80; }
-  .err { color: #f87171; }
+  :root{
+    --bg:#15130f;
+    --surface:#1e1b15;
+    --surface-2:#28241c;
+    --border:#3a3427;
+    --text:#f1ead9;
+    --text-dim:#a89f8c;
+    --text-faint:#726b5c;
+    --accent:#c17f42;
+    --accent-soft:rgba(193,127,66,.16);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft);}
+  input,select,textarea,button{font-family:inherit;}
+  a{color:var(--accent);}
+
+  #login-view{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .login-card{width:100%;max-width:360px;}
+  .brand{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-style:italic;
+    font-size:2rem;
+    letter-spacing:.01em;
+    margin:0 0 2px;
+  }
+  .brand-sub{
+    color:var(--text-dim);
+    font-size:.82rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    margin:0 0 32px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;
+    font-size:.75rem;
+    color:var(--text-dim);
+    margin-bottom:6px;
+    letter-spacing:.03em;
+  }
+  .field input{
+    width:100%;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    color:var(--text);
+    font-size:.95rem;
+  }
+  .field input:focus{outline:none;border-color:var(--accent);}
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    background:var(--accent);
+    color:#1a1408;
+    border:none;
+    border-radius:8px;
+    padding:12px 20px;
+    font-size:.92rem;
+    font-weight:600;
+    cursor:pointer;
+    width:100%;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
+  .btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+  #login-error{color:#e07a5f;font-size:.82rem;margin-top:14px;min-height:1em;}
+
+  #app-view{display:none;}
+  header.topbar{
+    position:sticky;top:0;z-index:10;
+    background:rgba(21,19,15,.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border);
+    padding:14px 16px;
+  }
+  .topbar-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+  .topbar-row h1{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:1.3rem;
+    margin:0;
+  }
+  #signout-btn{background:none;border:none;color:var(--text-faint);font-size:.78rem;cursor:pointer;padding:4px;}
+  #item-count{color:var(--text-dim);font-size:.78rem;margin-top:2px;}
+
+  main{max-width:720px;margin:0 auto;padding:14px 16px 100px;}
+
+  .controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .controls input[type="search"], .controls select{
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:.85rem;
+  }
+  #search-input{flex:1 1 160px; min-width:0;}
+  .controls select{flex:0 0 auto;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+  .chip{
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text-dim);
+    border-radius:20px;
+    padding:5px 12px;
+    font-size:.76rem;
+    cursor:pointer;
+    user-select:none;
+  }
+  .chip.active{background:var(--accent-soft);border-color:var(--accent);color:var(--text);}
+
+  .item{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:10px;
+    cursor:pointer;
+  }
+  .item-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .item-title{font-weight:600;font-size:.96rem;line-height:1.3;}
+  .item-sub{color:var(--text-dim);font-size:.8rem;margin-top:2px;}
+  .item-score{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:600;
+    font-size:1.15rem;
+    color:var(--accent);
+    white-space:nowrap;
+  }
+  .item-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .badge{font-size:.7rem;padding:3px 9px;border-radius:20px;font-weight:600;color:#15130f;}
+  .pill{font-size:.7rem;padding:3px 8px;border-radius:5px;color:#15130f;font-weight:600;}
+  .item-detail{
+    display:none;
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid var(--border);
+    font-size:.82rem;
+    color:var(--text-dim);
+    line-height:1.55;
+  }
+  .item.expanded .item-detail{display:block;}
+  .detail-row{margin-bottom:6px;}
+  .detail-row strong{color:var(--text);font-weight:600;}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--text-faint);}
+
+  #add-fab{
+    position:fixed;right:20px;bottom:20px;
+    width:56px;height:56px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#1a1408;
+    border:none;
+    font-size:1.6rem;
+    cursor:pointer;
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+    z-index:20;
+  }
+  .modal-overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(10,9,6,.7);
+    z-index:30;
+    align-items:flex-end;
+    justify-content:center;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px 16px 0 0;
+    width:100%;max-width:600px;max-height:88vh;
+    overflow-y:auto;
+    padding:20px;
+  }
+  .modal h2{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-weight:600;
+    margin:0 0 4px;
+    font-size:1.2rem;
+  }
+  .modal p.hint{color:var(--text-dim);font-size:.8rem;margin:0 0 14px;}
+  .modal textarea{
+    width:100%;min-height:220px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    padding:12px;
+    font-size:.8rem;
+    font-family:'IBM Plex Mono',monospace;
+    line-height:1.5;
+    resize:vertical;
+  }
+  .modal-actions{display:flex;gap:8px;margin-top:14px;}
+  .modal-actions .btn{width:auto;flex:1;}
+  #add-error{color:#e07a5f;font-size:.8rem;margin-top:10px;white-space:pre-wrap;}
+  #add-preview{
+    margin-top:14px;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px;
+    font-size:.8rem;
+    display:none;
+  }
+  #add-preview.show{display:block;}
+  #add-preview div{margin-bottom:4px;}
+  #toggle-format{
+    background:none;border:none;color:var(--text-faint);
+    font-size:.75rem;text-decoration:underline;cursor:pointer;padding:0;margin-top:8px;
+  }
+  #format-help{display:none;font-size:.74rem;color:var(--text-faint);margin-top:8px;line-height:1.6;white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:10px;}
+  #format-help.show{display:block;}
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>Waïma Wardrobe</h1>
-  <p>Pipeline GitHub → Netlify : test de déploiement</p>
-  <div id="status">Vérification Supabase…</div>
+
+<div id="login-view">
+  <div class="login-card">
+    <p class="brand">Waïma</p>
+    <p class="brand-sub">Garde-robe · Lionel</p>
+    <form id="login-form" autocomplete="on">
+      <div class="field">
+        <label for="login-email">Email</label>
+        <input id="login-email" name="email" type="email" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="login-password">Mot de passe</label>
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn">Se connecter</button>
+      <p id="login-error"></p>
+    </form>
+  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const statusEl = document.getElementById('status');
-  if (typeof supabase !== 'undefined') {
-    statusEl.textContent = '✅ Client Supabase chargé correctement';
-    statusEl.className = 'ok';
-  } else {
-    statusEl.textContent = '❌ Client Supabase non chargé';
-    statusEl.className = 'err';
+<div id="app-view">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div>
+        <h1>Waïma</h1>
+        <p id="item-count"></p>
+      </div>
+      <button id="signout-btn">Déconnexion</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="controls">
+      <input type="search" id="search-input" placeholder="Rechercher (libellé, marque, couleur…)">
+      <select id="category-filter"><option value="">Toutes catégories</option></select>
+      <select id="sort-select">
+        <option value="score-desc">Score ↓</option>
+        <option value="score-asc">Score ↑</option>
+        <option value="frequence-desc">Fréquence ↓</option>
+        <option value="attachement-desc">Attachement ↓</option>
+        <option value="libelle-asc">Libellé A→Z</option>
+      </select>
+    </div>
+    <div class="chips" id="role-chips"></div>
+
+    <div id="items-container"></div>
+  </main>
+
+  <button id="add-fab" aria-label="Ajouter une pièce">+</button>
+</div>
+
+<div class="modal-overlay" id="add-overlay">
+  <div class="modal">
+    <h2>Ajouter une pièce</h2>
+    <p class="hint">Colle le descriptif au format ci-dessous (celui que Waïma te donne dans la conversation).</p>
+    <textarea id="add-textarea" placeholder="ID: CHM-Exemple-CT
+Libellé: Chemise exemple
+Catégorie: Chemises
+Sous-catégorie: Twill
+Marque: Charles Tyrwhitt
+Couleur: Bleu ciel
+Matière: 100% coton
+Texture: Texturée
+Formalité: 4
+Saison: 4 saisons
+Fréquence: 3
+Attachement: 3
+Rôle: rotation
+ADN dominant: stratege
+Intensité dominante: 78
+ADN secondaire: homme_moderne
+Intensité secondaire: 60
+Polyvalence: 4
+Premium perçu: 4
+Score: 7.8
+Description: Chemise texturée bleu ciel, col semi-italien..."></textarea>
+    <button id="toggle-format" type="button">Voir les valeurs autorisées (rôle / ADN)</button>
+    <div id="format-help"></div>
+    <div id="add-preview"></div>
+    <p id="add-error"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="add-cancel">Annuler</button>
+      <button class="btn" id="add-parse">Prévisualiser</button>
+      <button class="btn" id="add-confirm" style="display:none;">Confirmer l'ajout</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+const SUPABASE_URL = 'https://dqqsggolhfoehmjeibxp.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_uqQleZZwiJAUXqB35KpRJQ_FQftz87j';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+let allItems = [];
+let activeRoles = new Set();
+let rolesRef = [];
+let adnRef = [];
+
+async function checkSession(){
+  const { data:{ session } } = await supabase.auth.getSession();
+  if(session){ showApp(); } else { showLogin(); }
+}
+
+function showLogin(){
+  $('#login-view').style.display = 'flex';
+  $('#app-view').style.display = 'none';
+}
+function showApp(){
+  $('#login-view').style.display = 'none';
+  $('#app-view').style.display = 'block';
+  loadReferenceData().then(loadItems);
+}
+
+$('#login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('#login-error').textContent = '';
+  const email = $('#login-email').value.trim();
+  const password = $('#login-password').value;
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if(error){
+    $('#login-error').textContent = "Connexion impossible : " + error.message;
+    return;
   }
+  showApp();
+});
+
+$('#signout-btn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  showLogin();
+});
+
+async function loadReferenceData(){
+  const { data: roles } = await supabase.from('roles').select('*').order('ordre');
+  rolesRef = roles || [];
+  const { data: adn } = await supabase.from('adn').select('*');
+  adnRef = adn || [];
+
+  const chipContainer = $('#role-chips');
+  chipContainer.innerHTML = '';
+  rolesRef.forEach(r => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = r.libelle;
+    chip.dataset.code = r.code;
+    chip.addEventListener('click', () => {
+      if(activeRoles.has(r.code)){ activeRoles.delete(r.code); chip.classList.remove('active'); }
+      else { activeRoles.add(r.code); chip.classList.add('active'); }
+      render();
+    });
+    chipContainer.appendChild(chip);
+  });
+}
+
+async function loadItems(){
+  const { data, error } = await supabase
+    .from('wardrobe_items')
+    .select(`
+      *,
+      categorie:categories(categorie, sous_categorie),
+      marque:marques(nom),
+      role:roles(code, libelle, couleur),
+      adn_dom:adn!wardrobe_items_adn_dominant_code_fkey(libelle, couleur, registre),
+      adn_sec:adn!wardrobe_items_adn_secondaire_code_fkey(libelle, couleur, registre),
+      f_formalite:echelle_formalite(libelle, couleur),
+      f_frequence:echelle_frequence(libelle, couleur),
+      f_attachement:echelle_attachement(libelle, couleur),
+      f_polyvalence:echelle_polyvalence(libelle, couleur),
+      f_premium:echelle_premium(libelle, couleur)
+    `);
+  if(error){
+    $('#items-container').innerHTML = `<div class="empty-state">Erreur de chargement : ${error.message}</div>`;
+    return;
+  }
+  allItems = data || [];
+  populateCategoryFilter();
+  render();
+}
+
+function populateCategoryFilter(){
+  const sel = $('#category-filter');
+  const cats = new Set();
+  allItems.forEach(it => { if(it.categorie) cats.add(it.categorie.categorie); });
+  [...cats].sort().forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function getFiltered(){
+  const q = $('#search-input').value.trim().toLowerCase();
+  const cat = $('#category-filter').value;
+  let items = allItems.filter(it => {
+    if(cat && (!it.categorie || it.categorie.categorie !== cat)) return false;
+    if(activeRoles.size > 0 && !activeRoles.has(it.role_code)) return false;
+    if(q){
+      const hay = [it.libelle, it.marque?.nom, it.couleur_principale, it.matiere, it.description_ia]
+        .filter(Boolean).join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const sortVal = $('#sort-select').value;
+  const [field, dir] = sortVal.split('-');
+  items.sort((a,b) => {
+    let av, bv;
+    if(field === 'score'){ av = a.score ?? -1; bv = b.score ?? -1; }
+    else if(field === 'frequence'){ av = a.frequence ?? -1; bv = b.frequence ?? -1; }
+    else if(field === 'attachement'){ av = a.attachement ?? -1; bv = b.attachement ?? -1; }
+    else if(field === 'libelle'){ av = a.libelle.toLowerCase(); bv = b.libelle.toLowerCase(); }
+    if(av < bv) return dir === 'asc' ? -1 : 1;
+    if(av > bv) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return items;
+}
+
+function pill(refObj, value){
+  if(!refObj) return '';
+  return `<span class="pill" style="background:${refObj.couleur}" title="${refObj.libelle}">${value}</span>`;
+}
+
+function render(){
+  const items = getFiltered();
+  $('#item-count').textContent = `${items.length} pièce${items.length>1?'s':''}`;
+  const container = $('#items-container');
+  if(items.length === 0){
+    container.innerHTML = `<div class="empty-state">Aucune pièce ne correspond aux filtres.</div>`;
+    return;
+  }
+  container.innerHTML = items.map(it => {
+    const catLabel = it.categorie ? (it.categorie.sous_categorie ? `${it.categorie.categorie} · ${it.categorie.sous_categorie}` : it.categorie.categorie) : '—';
+    const roleBadge = it.role ? `<span class="badge" style="background:${it.role.couleur}">${it.role.libelle}</span>` : '';
+    const adnDomBadge = it.adn_dom ? `<span class="badge" style="background:${it.adn_dom.couleur};color:#f1ead9">${it.adn_dom.libelle}</span>` : '';
+    const saisonTxt = Array.isArray(it.saison) ? it.saison.join(', ') : '';
+
+    return `
+    <div class="item" data-id="${it.id}">
+      <div class="item-head">
+        <div>
+          <div class="item-title">${escapeHtml(it.libelle)}</div>
+          <div class="item-sub">${escapeHtml(it.marque?.nom || '—')} · ${escapeHtml(catLabel)}</div>
+        </div>
+        <div class="item-score">${it.score != null ? Number(it.score).toFixed(1) : '—'}</div>
+      </div>
+      <div class="item-badges">
+        ${roleBadge}
+        ${adnDomBadge}
+        ${pill(it.f_formalite, 'F'+it.formalite)}
+        ${pill(it.f_frequence, 'U'+it.frequence)}
+        ${pill(it.f_attachement, 'A'+it.attachement)}
+        ${pill(it.f_polyvalence, 'P'+it.polyvalence)}
+        ${pill(it.f_premium, 'Q'+it.premium_percu)}
+      </div>
+      <div class="item-detail">
+        <div class="detail-row"><strong>Couleur :</strong> ${escapeHtml(it.couleur_principale || '—')}</div>
+        <div class="detail-row"><strong>Matière :</strong> ${escapeHtml(it.matiere || '—')}</div>
+        <div class="detail-row"><strong>Texture :</strong> ${escapeHtml(it.texture || '—')}</div>
+        <div class="detail-row"><strong>Saison :</strong> ${escapeHtml(saisonTxt || '—')}</div>
+        ${it.adn_sec ? `<div class="detail-row"><strong>ADN secondaire :</strong> ${escapeHtml(it.adn_sec.libelle)} (${it.intensite_secondaire})</div>` : ''}
+        ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
+        <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
+        ${it.description_ia ? `<div class="detail-row" style="margin-top:8px;">${escapeHtml(it.description_ia)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  $$('.item').forEach(el => {
+    el.addEventListener('click', () => el.classList.toggle('expanded'));
+  });
+}
+
+function escapeHtml(s){
+  if(s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+$('#search-input').addEventListener('input', render);
+$('#category-filter').addEventListener('change', render);
+$('#sort-select').addEventListener('change', render);
+
+const overlay = $('#add-overlay');
+$('#add-fab').addEventListener('click', () => {
+  overlay.classList.add('open');
+  $('#add-preview').classList.remove('show');
+  $('#add-confirm').style.display = 'none';
+  $('#add-parse').style.display = 'inline-flex';
+  $('#add-error').textContent = '';
+});
+$('#add-cancel').addEventListener('click', () => overlay.classList.remove('open'));
+
+$('#toggle-format').addEventListener('click', () => {
+  const help = $('#format-help');
+  if(!help.classList.contains('show')){
+    help.textContent =
+`Rôles valides : ${rolesRef.map(r=>r.code).join(', ')}
+ADN valides : ${adnRef.map(a=>a.code).join(', ')}
+Champs numériques 1-5 : Formalité, Fréquence, Attachement, Polyvalence, Premium perçu
+Intensités : 0-100
+Score : décimal, ex 7.8
+Les champs Sous-catégorie, ADN secondaire, Intensité secondaire, Saison, Description sont optionnels.`;
+  }
+  help.classList.toggle('show');
+});
+
+const FIELD_MAP = {
+  'id':'id','libellé':'libelle','libelle':'libelle','catégorie':'categorie','categorie':'categorie',
+  'sous-catégorie':'sous_categorie','sous-categorie':'sous_categorie','marque':'marque',
+  'couleur':'couleur_principale','matière':'matiere','matiere':'matiere','texture':'texture',
+  'formalité':'formalite','formalite':'formalite','saison':'saison','fréquence':'frequence','frequence':'frequence',
+  'attachement':'attachement',
+  'rôle':'role_code','role':'role_code',
+  'adn dominant':'adn_dominant_code','adn secondaire':'adn_secondaire_code',
+  'intensité dominante':'intensite_dominant','intensite dominante':'intensite_dominant',
+  'intensité secondaire':'intensite_secondaire','intensite secondaire':'intensite_secondaire',
+  'polyvalence':'polyvalence','premium perçu':'premium_percu','premium percu':'premium_percu',
+  'score':'score','description':'description_ia'
+};
+
+function parsePastedItem(text){
+  const lines = text.split('\n');
+  const obj = {};
+  let currentKey = null;
+  for(const rawLine of lines){
+    const m = rawLine.match(/^([^:]+):\s?(.*)$/);
+    if(m){
+      const key = m[1].trim().toLowerCase();
+      const mapped = FIELD_MAP[key];
+      if(mapped){
+        currentKey = mapped;
+        obj[mapped] = m[2].trim();
+      } else {
+        currentKey = null;
+      }
+    } else if(currentKey && rawLine.trim()){
+      obj[currentKey] += ' ' + rawLine.trim();
+    }
+  }
+  return obj;
+}
+
+let pendingItem = null;
+
+$('#add-parse').addEventListener('click', async () => {
+  $('#add-error').textContent = '';
+  const raw = $('#add-textarea').value;
+  const parsed = parsePastedItem(raw);
+
+  if(!parsed.id || !parsed.libelle){
+    $('#add-error').textContent = 'Il manque au moins ID et Libellé.';
+    return;
+  }
+  if(parsed.role_code && !rolesRef.find(r=>r.code===parsed.role_code)){
+    $('#add-error').textContent = `Rôle inconnu : "${parsed.role_code}". Valeurs valides : ${rolesRef.map(r=>r.code).join(', ')}`;
+    return;
+  }
+  if(parsed.adn_dominant_code && !adnRef.find(a=>a.code===parsed.adn_dominant_code)){
+    $('#add-error').textContent = `ADN dominant inconnu : "${parsed.adn_dominant_code}". Valeurs valides : ${adnRef.map(a=>a.code).join(', ')}`;
+    return;
+  }
+
+  let categorie_id = null, marque_id = null;
+  if(parsed.categorie){
+    const { data: catRow } = await supabase.from('categories').select('id')
+      .eq('categorie', parsed.categorie)
+      .eq('sous_categorie', parsed.sous_categorie || null)
+      .maybeSingle();
+    if(catRow) categorie_id = catRow.id;
+    else {
+      const { data: newCat, error: catErr } = await supabase.from('categories')
+        .insert({ categorie: parsed.categorie, sous_categorie: parsed.sous_categorie || null })
+        .select('id').single();
+      if(catErr){ $('#add-error').textContent = 'Erreur catégorie : ' + catErr.message; return; }
+      categorie_id = newCat.id;
+    }
+  }
+  if(parsed.marque){
+    const { data: mRow } = await supabase.from('marques').select('id').eq('nom', parsed.marque).maybeSingle();
+    if(mRow) marque_id = mRow.id;
+    else {
+      const { data: newM, error: mErr } = await supabase.from('marques').insert({ nom: parsed.marque }).select('id').single();
+      if(mErr){ $('#add-error').textContent = 'Erreur marque : ' + mErr.message; return; }
+      marque_id = newM.id;
+    }
+  }
+
+  pendingItem = {
+    id: parsed.id,
+    libelle: parsed.libelle,
+    categorie_id, marque_id,
+    couleur_principale: parsed.couleur_principale || null,
+    matiere: parsed.matiere || null,
+    texture: parsed.texture || null,
+    formalite: parsed.formalite ? parseInt(parsed.formalite) : null,
+    saison: parsed.saison ? parsed.saison.split(',').map(s=>s.trim()) : null,
+    frequence: parsed.frequence ? parseInt(parsed.frequence) : null,
+    attachement: parsed.attachement ? parseInt(parsed.attachement) : null,
+    role_code: parsed.role_code || null,
+    adn_dominant_code: parsed.adn_dominant_code || null,
+    intensite_dominant: parsed.intensite_dominant ? parseInt(parsed.intensite_dominant) : null,
+    adn_secondaire_code: parsed.adn_secondaire_code || null,
+    intensite_secondaire: parsed.intensite_secondaire ? parseInt(parsed.intensite_secondaire) : null,
+    polyvalence: parsed.polyvalence ? parseInt(parsed.polyvalence) : null,
+    premium_percu: parsed.premium_percu ? parseInt(parsed.premium_percu) : null,
+    score: parsed.score ? parseFloat(parsed.score) : null,
+    description_ia: parsed.description_ia || null,
+  };
+
+  const prev = $('#add-preview');
+  prev.innerHTML = Object.entries(pendingItem).map(([k,v]) => `<div><strong>${k}:</strong> ${Array.isArray(v)?v.join(', '):(v ?? '—')}</div>`).join('');
+  prev.classList.add('show');
+  $('#add-parse').style.display = 'none';
+  $('#add-confirm').style.display = 'inline-flex';
+});
+
+$('#add-confirm').addEventListener('click', async () => {
+  if(!pendingItem) return;
+  const { error } = await supabase.from('wardrobe_items').insert(pendingItem);
+  if(error){
+    $('#add-error').textContent = "Erreur à l'insertion : " + error.message;
+    return;
+  }
+  overlay.classList.remove('open');
+  $('#add-textarea').value = '';
+  pendingItem = null;
+  await loadItems();
+});
+
+checkSession();
 </script>
 </body>
 </html>
