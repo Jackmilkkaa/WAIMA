@@ -744,6 +744,7 @@ function setupThresholds(){
 
 function populateCategoryFilter(){
   const sel = $('#category-filter');
+  sel.innerHTML = '<option value="">Toutes</option>';
   const cats = new Set();
   allItems.forEach(it => { if(it.categorie) cats.add(it.categorie.categorie); });
   [...cats].sort().forEach(c => {
