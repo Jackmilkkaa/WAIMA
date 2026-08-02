@@ -176,6 +176,7 @@
   .item.expanded .item-detail{display:block;}
   .detail-row{margin-bottom:6px;}
   .detail-row strong{color:var(--text);font-weight:600;}
+  .item-actions{display:flex;gap:8px;margin-top:14px;}
 
   .empty-state{text-align:center;padding:60px 20px;color:var(--text-faint);}
 
@@ -399,7 +400,7 @@
 
 <div class="modal-overlay" id="add-overlay">
   <div class="modal">
-    <h2>Ajouter une pièce</h2>
+    <h2 id="add-modal-title">Ajouter une pièce</h2>
     <p class="hint">Colle le descriptif au format ci-dessous (celui que Waïma te donne dans la conversation).</p>
     <textarea id="add-textarea" placeholder="ID: CHM-Exemple-CT
 Libellé: Chemise exemple
@@ -736,12 +737,36 @@ function render(){
         ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
         <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
         ${it.description_ia ? `<div class="detail-row" style="margin-top:8px;">${escapeHtml(it.description_ia)}</div>` : ''}
+        <div class="item-actions">
+          <button class="btn-ghost item-edit-btn" data-id="${escapeHtml(it.id)}" style="border-radius:8px;padding:8px 14px;font-size:.8rem;cursor:pointer;">Modifier</button>
+          <button class="btn-ghost item-delete-btn" data-id="${escapeHtml(it.id)}" style="border-radius:8px;padding:8px 14px;font-size:.8rem;cursor:pointer;color:#e07a5f;border-color:#5a3a30;">Supprimer</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 
   $$('.item').forEach(el => {
     el.addEventListener('click', () => el.classList.toggle('expanded'));
+  });
+
+  $$('.item-edit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const item = allItems.find(x => x.id === btn.dataset.id);
+      if(item) openEditModal(item);
+    });
+  });
+
+  $$('.item-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const item = allItems.find(x => x.id === btn.dataset.id);
+      if(!item) return;
+      if(!confirm(`Supprimer définitivement "${item.libelle}" ? Cette action est irréversible.`)) return;
+      const { error } = await supabase.from('wardrobe_items').delete().eq('id', item.id);
+      if(error){ alert('Erreur à la suppression : ' + error.message); return; }
+      await loadItems();
+    });
   });
 }
 
@@ -782,7 +807,12 @@ function updateFilterBadge(){
 }
 
 const overlay = $('#add-overlay');
+let editingId = null;
+
 $('#add-fab').addEventListener('click', () => {
+  editingId = null;
+  $('#add-modal-title').textContent = 'Ajouter une pièce';
+  $('#add-textarea').value = '';
   overlay.classList.add('open');
   $('#add-preview').classList.remove('show');
   $('#add-confirm').style.display = 'none';
@@ -804,6 +834,40 @@ Les champs Sous-catégorie, ADN secondaire, Intensité secondaire, Saison, Descr
   }
   help.classList.toggle('show');
 });
+
+function openEditModal(it){
+  editingId = it.id;
+  $('#add-modal-title').textContent = 'Modifier : ' + it.libelle;
+  const lines = [
+    `ID: ${it.id}`,
+    `Libellé: ${it.libelle}`,
+    `Catégorie: ${it.categorie?.categorie || ''}`,
+    `Sous-catégorie: ${it.categorie?.sous_categorie || ''}`,
+    `Marque: ${it.marque?.nom || ''}`,
+    `Couleur: ${it.couleur_principale || ''}`,
+    `Matière: ${it.matiere || ''}`,
+    `Texture: ${it.texture || ''}`,
+    `Formalité: ${it.formalite ?? ''}`,
+    `Saison: ${(it.saison||[]).join(', ')}`,
+    `Fréquence: ${it.frequence ?? ''}`,
+    `Attachement: ${it.attachement ?? ''}`,
+    `Rôle: ${it.role_code || ''}`,
+    `ADN dominant: ${it.adn_dominant_code || ''}`,
+    `Intensité dominante: ${it.intensite_dominant ?? ''}`,
+    `ADN secondaire: ${it.adn_secondaire_code || ''}`,
+    `Intensité secondaire: ${it.intensite_secondaire ?? ''}`,
+    `Polyvalence: ${it.polyvalence ?? ''}`,
+    `Premium perçu: ${it.premium_percu ?? ''}`,
+    `Score: ${it.score ?? ''}`,
+    `Description: ${it.description_ia || ''}`,
+  ];
+  $('#add-textarea').value = lines.join('\n');
+  overlay.classList.add('open');
+  $('#add-preview').classList.remove('show');
+  $('#add-confirm').style.display = 'none';
+  $('#add-parse').style.display = 'inline-flex';
+  $('#add-error').textContent = '';
+}
 
 const FIELD_MAP = {
   'id':'id','libellé':'libelle','libelle':'libelle','catégorie':'categorie','categorie':'categorie',
@@ -852,6 +916,7 @@ $('#add-parse').addEventListener('click', async () => {
     $('#add-error').textContent = 'Il manque au moins ID et Libellé.';
     return;
   }
+  if(editingId){ parsed.id = editingId; } // la clé ne se modifie pas via ce flux
   if(parsed.role_code && !rolesRef.find(r=>r.code===parsed.role_code)){
     $('#add-error').textContent = `Rôle inconnu : "${parsed.role_code}". Valeurs valides : ${rolesRef.map(r=>r.code).join(', ')}`;
     return;
@@ -912,19 +977,27 @@ $('#add-parse').addEventListener('click', async () => {
   prev.innerHTML = Object.entries(pendingItem).map(([k,v]) => `<div><strong>${k}:</strong> ${Array.isArray(v)?v.join(', '):(v ?? '—')}</div>`).join('');
   prev.classList.add('show');
   $('#add-parse').style.display = 'none';
+  $('#add-confirm').textContent = editingId ? "Confirmer la modification" : "Confirmer l'ajout";
   $('#add-confirm').style.display = 'inline-flex';
 });
 
 $('#add-confirm').addEventListener('click', async () => {
   if(!pendingItem) return;
-  const { error } = await supabase.from('wardrobe_items').insert(pendingItem);
+  let error;
+  if(editingId){
+    const { id, ...updateFields } = pendingItem;
+    ({ error } = await supabase.from('wardrobe_items').update(updateFields).eq('id', editingId));
+  } else {
+    ({ error } = await supabase.from('wardrobe_items').insert(pendingItem));
+  }
   if(error){
-    $('#add-error').textContent = "Erreur à l'insertion : " + error.message;
+    $('#add-error').textContent = "Erreur à l'enregistrement : " + error.message;
     return;
   }
   overlay.classList.remove('open');
   $('#add-textarea').value = '';
   pendingItem = null;
+  editingId = null;
   await loadItems();
 });
 
