@@ -345,6 +345,10 @@
       <select id="category-filter"><option value="">Toutes</option></select>
     </div>
     <div class="filter-block">
+      <label class="filter-label">Sous-catégorie</label>
+      <select id="sous-categorie-filter"><option value="">Toutes</option></select>
+    </div>
+    <div class="filter-block">
       <label class="filter-label">Marque</label>
       <select id="marque-filter"><option value="">Toutes</option></select>
     </div>
@@ -625,14 +629,34 @@ function populateCategoryFilter(){
     opt.value = c; opt.textContent = c;
     sel.appendChild(opt);
   });
+  populateSousCategorieFilter();
+}
+
+function populateSousCategorieFilter(){
+  const sel = $('#sous-categorie-filter');
+  const currentCat = $('#category-filter').value;
+  sel.innerHTML = '<option value="">Toutes</option>';
+  const subs = new Set();
+  allItems.forEach(it => {
+    if(!it.categorie || !it.categorie.sous_categorie) return;
+    if(currentCat && it.categorie.categorie !== currentCat) return;
+    subs.add(it.categorie.sous_categorie);
+  });
+  [...subs].sort().forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
 }
 
 function getFiltered(){
   const q = $('#search-input').value.trim().toLowerCase();
   const cat = $('#category-filter').value;
+  const sousCat = $('#sous-categorie-filter').value;
   const marque = $('#marque-filter').value;
   let items = allItems.filter(it => {
     if(cat && (!it.categorie || it.categorie.categorie !== cat)) return false;
+    if(sousCat && (!it.categorie || it.categorie.sous_categorie !== sousCat)) return false;
     if(marque && (!it.marque || it.marque.nom !== marque)) return false;
     if(activeRoles.size > 0 && !activeRoles.has(it.role_code)) return false;
     if(activeAdn.size > 0 && !activeAdn.has(it.adn_dominant_code)) return false;
@@ -727,7 +751,8 @@ function escapeHtml(s){
 }
 
 $('#search-input').addEventListener('input', render);
-$('#category-filter').addEventListener('change', () => { render(); updateFilterBadge(); });
+$('#category-filter').addEventListener('change', () => { populateSousCategorieFilter(); render(); updateFilterBadge(); });
+$('#sous-categorie-filter').addEventListener('change', () => { render(); updateFilterBadge(); });
 $('#marque-filter').addEventListener('change', () => { render(); updateFilterBadge(); });
 $('#sort-select').addEventListener('change', render);
 
@@ -737,6 +762,8 @@ $('#filters-reset').addEventListener('click', () => {
   activeRoles.clear(); activeAdn.clear(); activeTexture.clear(); activeSaison.clear();
   Object.keys(thresholds).forEach(k => thresholds[k] = 0);
   $('#category-filter').value = '';
+  $('#sous-categorie-filter').value = '';
+  populateSousCategorieFilter();
   $('#marque-filter').value = '';
   $$('#role-chips .chip, #adn-chips .chip, #texture-chips .chip, #saison-chips .chip, .thresh-btn').forEach(c => c.classList.remove('active'));
   render(); updateFilterBadge();
@@ -745,6 +772,7 @@ $('#filters-reset').addEventListener('click', () => {
 function updateFilterBadge(){
   let count = 0;
   if($('#category-filter').value) count++;
+  if($('#sous-categorie-filter').value) count++;
   if($('#marque-filter').value) count++;
   count += activeRoles.size + activeAdn.size + activeTexture.size + activeSaison.size;
   count += Object.values(thresholds).filter(v => v > 0).length;
