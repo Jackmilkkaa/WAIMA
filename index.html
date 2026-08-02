@@ -281,6 +281,36 @@
     cursor:pointer;
   }
   .thresh-btn.active{background:var(--accent);border-color:var(--accent);color:#1a1408;}
+
+  .form-section-title{
+    font-family:'Fraunces',serif;
+    font-style:italic;
+    font-size:.95rem;
+    color:var(--accent);
+    margin:20px 0 10px;
+    padding-top:14px;
+    border-top:1px solid var(--border);
+  }
+  .form-section-title:first-of-type{margin-top:4px;padding-top:0;border-top:none;}
+  .filter-block input[type="text"], .filter-block input[type="number"], .filter-block textarea{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:.85rem;
+  }
+  .filter-block input:focus, .filter-block select:focus, .filter-block textarea:focus{
+    outline:none;border-color:var(--accent);
+  }
+  .checkbox-row{display:flex;flex-wrap:wrap;gap:12px;}
+  .checkbox-row label{
+    display:flex;align-items:center;gap:6px;
+    font-size:.82rem;color:var(--text-dim);
+    cursor:pointer;
+  }
+  .checkbox-row input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -401,37 +431,117 @@
 <div class="modal-overlay" id="add-overlay">
   <div class="modal">
     <h2 id="add-modal-title">Ajouter une pièce</h2>
-    <p class="hint">Colle le descriptif au format ci-dessous (celui que Waïma te donne dans la conversation).</p>
-    <textarea id="add-textarea" placeholder="ID: CHM-Exemple-CT
-Libellé: Chemise exemple
-Catégorie: Chemises
-Sous-catégorie: Twill
-Marque: Charles Tyrwhitt
-Couleur: Bleu ciel
-Matière: 100% coton
-Texture: Texturée
-Formalité: 4
-Saison: 4 saisons
-Fréquence: 3
-Attachement: 3
-Rôle: rotation
-ADN dominant: stratege
-Intensité dominante: 78
-ADN secondaire: homme_moderne
-Intensité secondaire: 60
-Polyvalence: 4
-Premium perçu: 4
-Score: 7.8
-Description: Chemise texturée bleu ciel, col semi-italien..."></textarea>
-    <button id="toggle-format" type="button">Voir les valeurs autorisées (rôle / ADN)</button>
-    <div id="format-help"></div>
-    <div id="add-preview"></div>
-    <p id="add-error"></p>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" id="add-cancel">Annuler</button>
-      <button class="btn" id="add-parse">Prévisualiser</button>
-      <button class="btn" id="add-confirm" style="display:none;">Confirmer l'ajout</button>
-    </div>
+    <p class="hint" id="add-modal-hint">Renseigne les champs ci-dessous.</p>
+
+    <form id="item-form">
+      <div class="form-section-title">Identité</div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-id">ID *</label>
+        <input type="text" id="f-id" placeholder="CAT-Couleur-Type-Marque" required>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-libelle">Libellé *</label>
+        <input type="text" id="f-libelle" required>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-categorie">Catégorie</label>
+        <select id="f-categorie"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-souscategorie">Sous-catégorie</label>
+        <select id="f-souscategorie"><option value="">(aucune)</option></select>
+        <input type="text" id="f-souscategorie-new" placeholder="Nouvelle sous-catégorie…" style="display:none;margin-top:6px;">
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-marque">Marque</label>
+        <select id="f-marque"><option value="">—</option></select>
+        <input type="text" id="f-marque-new" placeholder="Nouvelle marque…" style="display:none;margin-top:6px;">
+      </div>
+
+      <div class="form-section-title">Caractéristiques</div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-couleur">Couleur principale</label>
+        <input type="text" id="f-couleur">
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-matiere">Matière</label>
+        <input type="text" id="f-matiere">
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-texture">Texture</label>
+        <input type="text" id="f-texture" list="texture-options" placeholder="Lisse, Texturée, Maille…">
+        <datalist id="texture-options"></datalist>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label">Saison</label>
+        <div class="checkbox-row" id="f-saison-group">
+          <label><input type="checkbox" value="4 saisons"> 4 saisons</label>
+          <label><input type="checkbox" value="Chaud"> Chaud</label>
+          <label><input type="checkbox" value="Froid"> Froid</label>
+          <label><input type="checkbox" value="Mi-saison"> Mi-saison</label>
+        </div>
+        <input type="text" id="f-saison-autre" placeholder="Autre (séparé par des virgules)" style="margin-top:6px;">
+      </div>
+
+      <div class="form-section-title">Évaluation</div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-role">Rôle</label>
+        <select id="f-role"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-formalite">Formalité</label>
+        <select id="f-formalite"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-frequence">Fréquence</label>
+        <select id="f-frequence"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-attachement">Attachement</label>
+        <select id="f-attachement"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-polyvalence">Polyvalence</label>
+        <select id="f-polyvalence"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-premium">Premium perçu</label>
+        <select id="f-premium"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-score">Score (/10)</label>
+        <input type="number" id="f-score" step="0.1" min="0" max="10">
+      </div>
+
+      <div class="form-section-title">ADN</div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-adn-dom">ADN dominant</label>
+        <select id="f-adn-dom"><option value="">—</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-intensite-dom">Intensité dominante (0-100)</label>
+        <input type="number" id="f-intensite-dom" min="0" max="100">
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-adn-sec">ADN secondaire</label>
+        <select id="f-adn-sec"><option value="">(aucun)</option></select>
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-intensite-sec">Intensité secondaire (0-100)</label>
+        <input type="number" id="f-intensite-sec" min="0" max="100">
+      </div>
+
+      <div class="form-section-title">Description</div>
+      <div class="filter-block">
+        <textarea id="f-description" style="min-height:90px;font-family:'Inter',sans-serif;font-size:.85rem;"></textarea>
+      </div>
+
+      <p id="add-error"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="add-cancel">Annuler</button>
+        <button type="submit" class="btn" id="add-submit">Enregistrer</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -493,6 +603,16 @@ async function loadReferenceData(){
   const { data: adn } = await supabase.from('adn').select('*');
   adnRef = adn || [];
 
+  for(const key of ['formalite','frequence','attachement','polyvalence','premium']){
+    const table = 'echelle_' + key;
+    const { data: rows } = await supabase.from(table).select('*').order('valeur');
+    echelleRef[key] = rows || [];
+  }
+  const { data: cats } = await supabase.from('categories').select('*');
+  allCategories = cats || [];
+  const { data: marques } = await supabase.from('marques').select('*').order('nom');
+  allMarques = marques || [];
+
   const chipContainer = $('#role-chips');
   chipContainer.innerHTML = '';
   rolesRef.forEach(r => {
@@ -550,6 +670,7 @@ async function loadItems(){
   populateMarqueFilter();
   populateTextureChips();
   populateSaisonChips();
+  populateFormReferenceData();
   render();
 }
 
@@ -808,195 +929,205 @@ function updateFilterBadge(){
 
 const overlay = $('#add-overlay');
 let editingId = null;
+let allCategories = [];
+let allMarques = [];
+let echelleRef = {};
+
+function populateSelect(sel, options, placeholder){
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+}
+
+function populateFormReferenceData(){
+  populateSelect($('#f-role'), rolesRef.map(r => ({value:r.code, label:r.libelle})), '—');
+  populateSelect($('#f-adn-dom'), adnRef.map(a => ({value:a.code, label:a.libelle})), '—');
+  populateSelect($('#f-adn-sec'), adnRef.map(a => ({value:a.code, label:a.libelle})), '(aucun)');
+
+  ['formalite','frequence','attachement','polyvalence','premium'].forEach(key => {
+    const selId = key === 'premium' ? 'f-premium' : 'f-' + key;
+    const opts = (echelleRef[key] || []).map(e => ({value:e.valeur, label:`${e.valeur} — ${e.libelle}`}));
+    populateSelect($('#' + selId), opts, '—');
+  });
+
+  const catNames = [...new Set(allCategories.map(c => c.categorie))].sort();
+  populateSelect($('#f-categorie'), catNames.map(c => ({value:c, label:c})), '—');
+
+  const marqueOpts = allMarques.map(m => ({value:m.nom, label:m.nom}));
+  marqueOpts.push({value:'__new__', label:'+ Nouvelle marque…'});
+  populateSelect($('#f-marque'), marqueOpts, '—');
+
+  const textures = [...new Set(allItems.map(it => it.texture).filter(Boolean))].sort();
+  $('#texture-options').innerHTML = textures.map(t => `<option value="${t}">`).join('');
+}
+
+function populateSousCategorieOptions(categorieName, selectedValue){
+  const sel = $('#f-souscategorie');
+  const subs = allCategories.filter(c => c.categorie === categorieName && c.sous_categorie).map(c => c.sous_categorie).sort();
+  const opts = subs.map(s => ({value:s, label:s}));
+  opts.push({value:'__new__', label:'+ Nouvelle sous-catégorie…'});
+  populateSelect(sel, opts, '(aucune)');
+  sel.value = selectedValue && subs.includes(selectedValue) ? selectedValue : '';
+  $('#f-souscategorie-new').style.display = 'none';
+}
+
+$('#f-categorie').addEventListener('change', () => populateSousCategorieOptions($('#f-categorie').value, ''));
+$('#f-souscategorie').addEventListener('change', () => {
+  $('#f-souscategorie-new').style.display = $('#f-souscategorie').value === '__new__' ? 'block' : 'none';
+});
+$('#f-marque').addEventListener('change', () => {
+  $('#f-marque-new').style.display = $('#f-marque').value === '__new__' ? 'block' : 'none';
+});
+
+function resetForm(){
+  $('#item-form').reset();
+  $('#f-id').disabled = false;
+  $('#f-souscategorie-new').style.display = 'none';
+  $('#f-marque-new').style.display = 'none';
+  populateSousCategorieOptions('', '');
+  $('#add-error').textContent = '';
+}
 
 $('#add-fab').addEventListener('click', () => {
   editingId = null;
   $('#add-modal-title').textContent = 'Ajouter une pièce';
-  $('#add-textarea').value = '';
+  $('#add-modal-hint').textContent = "Renseigne les champs ci-dessous.";
+  $('#add-submit').textContent = 'Ajouter';
+  resetForm();
   overlay.classList.add('open');
-  $('#add-preview').classList.remove('show');
-  $('#add-confirm').style.display = 'none';
-  $('#add-parse').style.display = 'inline-flex';
-  $('#add-error').textContent = '';
 });
 $('#add-cancel').addEventListener('click', () => overlay.classList.remove('open'));
 
-$('#toggle-format').addEventListener('click', () => {
-  const help = $('#format-help');
-  if(!help.classList.contains('show')){
-    help.textContent =
-`Rôles valides : ${rolesRef.map(r=>r.code).join(', ')}
-ADN valides : ${adnRef.map(a=>a.code).join(', ')}
-Champs numériques 1-5 : Formalité, Fréquence, Attachement, Polyvalence, Premium perçu
-Intensités : 0-100
-Score : décimal, ex 7.8
-Les champs Sous-catégorie, ADN secondaire, Intensité secondaire, Saison, Description sont optionnels.`;
-  }
-  help.classList.toggle('show');
-});
-
 function openEditModal(it){
   editingId = it.id;
-  $('#add-modal-title').textContent = 'Modifier : ' + it.libelle;
-  const lines = [
-    `ID: ${it.id}`,
-    `Libellé: ${it.libelle}`,
-    `Catégorie: ${it.categorie?.categorie || ''}`,
-    `Sous-catégorie: ${it.categorie?.sous_categorie || ''}`,
-    `Marque: ${it.marque?.nom || ''}`,
-    `Couleur: ${it.couleur_principale || ''}`,
-    `Matière: ${it.matiere || ''}`,
-    `Texture: ${it.texture || ''}`,
-    `Formalité: ${it.formalite ?? ''}`,
-    `Saison: ${(it.saison||[]).join(', ')}`,
-    `Fréquence: ${it.frequence ?? ''}`,
-    `Attachement: ${it.attachement ?? ''}`,
-    `Rôle: ${it.role_code || ''}`,
-    `ADN dominant: ${it.adn_dominant_code || ''}`,
-    `Intensité dominante: ${it.intensite_dominant ?? ''}`,
-    `ADN secondaire: ${it.adn_secondaire_code || ''}`,
-    `Intensité secondaire: ${it.intensite_secondaire ?? ''}`,
-    `Polyvalence: ${it.polyvalence ?? ''}`,
-    `Premium perçu: ${it.premium_percu ?? ''}`,
-    `Score: ${it.score ?? ''}`,
-    `Description: ${it.description_ia || ''}`,
-  ];
-  $('#add-textarea').value = lines.join('\n');
+  $('#add-modal-title').textContent = 'Modifier';
+  $('#add-modal-hint').textContent = it.libelle;
+  $('#add-submit').textContent = 'Enregistrer les modifications';
+  $('#add-error').textContent = '';
+
+  $('#f-id').value = it.id;
+  $('#f-id').disabled = true;
+  $('#f-libelle').value = it.libelle || '';
+  $('#f-categorie').value = it.categorie?.categorie || '';
+  populateSousCategorieOptions(it.categorie?.categorie || '', it.categorie?.sous_categorie || '');
+  const marqueExists = allMarques.some(m => m.nom === it.marque?.nom);
+  $('#f-marque').value = marqueExists ? (it.marque?.nom || '') : (it.marque ? '__new__' : '');
+  $('#f-marque-new').style.display = (!marqueExists && it.marque) ? 'block' : 'none';
+  if(!marqueExists && it.marque) $('#f-marque-new').value = it.marque.nom;
+
+  $('#f-couleur').value = it.couleur_principale || '';
+  $('#f-matiere').value = it.matiere || '';
+  $('#f-texture').value = it.texture || '';
+
+  const knownSaisons = ['4 saisons','Chaud','Froid','Mi-saison'];
+  const itemSaisons = it.saison || [];
+  $$('#f-saison-group input[type=checkbox]').forEach(cb => { cb.checked = itemSaisons.includes(cb.value); });
+  $('#f-saison-autre').value = itemSaisons.filter(s => !knownSaisons.includes(s)).join(', ');
+
+  $('#f-role').value = it.role_code || '';
+  $('#f-formalite').value = it.formalite ?? '';
+  $('#f-frequence').value = it.frequence ?? '';
+  $('#f-attachement').value = it.attachement ?? '';
+  $('#f-polyvalence').value = it.polyvalence ?? '';
+  $('#f-premium').value = it.premium_percu ?? '';
+  $('#f-score').value = it.score ?? '';
+
+  $('#f-adn-dom').value = it.adn_dominant_code || '';
+  $('#f-intensite-dom').value = it.intensite_dominant ?? '';
+  $('#f-adn-sec').value = it.adn_secondaire_code || '';
+  $('#f-intensite-sec').value = it.intensite_secondaire ?? '';
+
+  $('#f-description').value = it.description_ia || '';
+
   overlay.classList.add('open');
-  $('#add-preview').classList.remove('show');
-  $('#add-confirm').style.display = 'none';
-  $('#add-parse').style.display = 'inline-flex';
-  $('#add-error').textContent = '';
 }
 
-const FIELD_MAP = {
-  'id':'id','libellé':'libelle','libelle':'libelle','catégorie':'categorie','categorie':'categorie',
-  'sous-catégorie':'sous_categorie','sous-categorie':'sous_categorie','marque':'marque',
-  'couleur':'couleur_principale','matière':'matiere','matiere':'matiere','texture':'texture',
-  'formalité':'formalite','formalite':'formalite','saison':'saison','fréquence':'frequence','frequence':'frequence',
-  'attachement':'attachement',
-  'rôle':'role_code','role':'role_code',
-  'adn dominant':'adn_dominant_code','adn secondaire':'adn_secondaire_code',
-  'intensité dominante':'intensite_dominant','intensite dominante':'intensite_dominant',
-  'intensité secondaire':'intensite_secondaire','intensite secondaire':'intensite_secondaire',
-  'polyvalence':'polyvalence','premium perçu':'premium_percu','premium percu':'premium_percu',
-  'score':'score','description':'description_ia'
-};
+async function resolveCategorieId(){
+  const categorie = $('#f-categorie').value;
+  if(!categorie) return null;
+  let sousCategorie = $('#f-souscategorie').value;
+  if(sousCategorie === '__new__') sousCategorie = $('#f-souscategorie-new').value.trim();
+  sousCategorie = sousCategorie || null;
 
-function parsePastedItem(text){
-  const lines = text.split('\n');
-  const obj = {};
-  let currentKey = null;
-  for(const rawLine of lines){
-    const m = rawLine.match(/^([^:]+):\s?(.*)$/);
-    if(m){
-      const key = m[1].trim().toLowerCase();
-      const mapped = FIELD_MAP[key];
-      if(mapped){
-        currentKey = mapped;
-        obj[mapped] = m[2].trim();
-      } else {
-        currentKey = null;
-      }
-    } else if(currentKey && rawLine.trim()){
-      obj[currentKey] += ' ' + rawLine.trim();
-    }
-  }
-  return obj;
+  const existing = allCategories.find(c => c.categorie === categorie && c.sous_categorie === sousCategorie);
+  if(existing) return existing.id;
+
+  const { data, error } = await supabase.from('categories').insert({ categorie, sous_categorie: sousCategorie }).select('id').single();
+  if(error) throw new Error('Catégorie : ' + error.message);
+  allCategories.push({ id:data.id, categorie, sous_categorie: sousCategorie });
+  return data.id;
 }
 
-let pendingItem = null;
+async function resolveMarqueId(){
+  let marque = $('#f-marque').value;
+  if(marque === '__new__') marque = $('#f-marque-new').value.trim();
+  if(!marque) return null;
 
-$('#add-parse').addEventListener('click', async () => {
+  const existing = allMarques.find(m => m.nom === marque);
+  if(existing) return existing.id;
+
+  const { data, error } = await supabase.from('marques').insert({ nom: marque }).select('id').single();
+  if(error) throw new Error('Marque : ' + error.message);
+  allMarques.push({ id:data.id, nom:marque });
+  return data.id;
+}
+
+$('#item-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
   $('#add-error').textContent = '';
-  const raw = $('#add-textarea').value;
-  const parsed = parsePastedItem(raw);
 
-  if(!parsed.id || !parsed.libelle){
-    $('#add-error').textContent = 'Il manque au moins ID et Libellé.';
-    return;
-  }
-  if(editingId){ parsed.id = editingId; } // la clé ne se modifie pas via ce flux
-  if(parsed.role_code && !rolesRef.find(r=>r.code===parsed.role_code)){
-    $('#add-error').textContent = `Rôle inconnu : "${parsed.role_code}". Valeurs valides : ${rolesRef.map(r=>r.code).join(', ')}`;
-    return;
-  }
-  if(parsed.adn_dominant_code && !adnRef.find(a=>a.code===parsed.adn_dominant_code)){
-    $('#add-error').textContent = `ADN dominant inconnu : "${parsed.adn_dominant_code}". Valeurs valides : ${adnRef.map(a=>a.code).join(', ')}`;
+  const id = $('#f-id').value.trim();
+  const libelle = $('#f-libelle').value.trim();
+  if(!id || !libelle){
+    $('#add-error').textContent = 'ID et Libellé sont obligatoires.';
     return;
   }
 
-  let categorie_id = null, marque_id = null;
-  if(parsed.categorie){
-    const { data: catRow } = await supabase.from('categories').select('id')
-      .eq('categorie', parsed.categorie)
-      .eq('sous_categorie', parsed.sous_categorie || null)
-      .maybeSingle();
-    if(catRow) categorie_id = catRow.id;
-    else {
-      const { data: newCat, error: catErr } = await supabase.from('categories')
-        .insert({ categorie: parsed.categorie, sous_categorie: parsed.sous_categorie || null })
-        .select('id').single();
-      if(catErr){ $('#add-error').textContent = 'Erreur catégorie : ' + catErr.message; return; }
-      categorie_id = newCat.id;
-    }
-  }
-  if(parsed.marque){
-    const { data: mRow } = await supabase.from('marques').select('id').eq('nom', parsed.marque).maybeSingle();
-    if(mRow) marque_id = mRow.id;
-    else {
-      const { data: newM, error: mErr } = await supabase.from('marques').insert({ nom: parsed.marque }).select('id').single();
-      if(mErr){ $('#add-error').textContent = 'Erreur marque : ' + mErr.message; return; }
-      marque_id = newM.id;
-    }
+  let categorie_id, marque_id;
+  try {
+    categorie_id = await resolveCategorieId();
+    marque_id = await resolveMarqueId();
+  } catch(err){
+    $('#add-error').textContent = err.message;
+    return;
   }
 
-  pendingItem = {
-    id: parsed.id,
-    libelle: parsed.libelle,
+  const saison = [
+    ...$$('#f-saison-group input[type=checkbox]:checked').map(cb => cb.value),
+    ...$('#f-saison-autre').value.split(',').map(s=>s.trim()).filter(Boolean)
+  ];
+
+  const payload = {
+    libelle,
     categorie_id, marque_id,
-    couleur_principale: parsed.couleur_principale || null,
-    matiere: parsed.matiere || null,
-    texture: parsed.texture || null,
-    formalite: parsed.formalite ? parseInt(parsed.formalite) : null,
-    saison: parsed.saison ? parsed.saison.split(',').map(s=>s.trim()) : null,
-    frequence: parsed.frequence ? parseInt(parsed.frequence) : null,
-    attachement: parsed.attachement ? parseInt(parsed.attachement) : null,
-    role_code: parsed.role_code || null,
-    adn_dominant_code: parsed.adn_dominant_code || null,
-    intensite_dominant: parsed.intensite_dominant ? parseInt(parsed.intensite_dominant) : null,
-    adn_secondaire_code: parsed.adn_secondaire_code || null,
-    intensite_secondaire: parsed.intensite_secondaire ? parseInt(parsed.intensite_secondaire) : null,
-    polyvalence: parsed.polyvalence ? parseInt(parsed.polyvalence) : null,
-    premium_percu: parsed.premium_percu ? parseInt(parsed.premium_percu) : null,
-    score: parsed.score ? parseFloat(parsed.score) : null,
-    description_ia: parsed.description_ia || null,
+    couleur_principale: $('#f-couleur').value.trim() || null,
+    matiere: $('#f-matiere').value.trim() || null,
+    texture: $('#f-texture').value.trim() || null,
+    formalite: $('#f-formalite').value ? parseInt($('#f-formalite').value) : null,
+    saison: saison.length ? saison : null,
+    frequence: $('#f-frequence').value ? parseInt($('#f-frequence').value) : null,
+    attachement: $('#f-attachement').value ? parseInt($('#f-attachement').value) : null,
+    role_code: $('#f-role').value || null,
+    adn_dominant_code: $('#f-adn-dom').value || null,
+    intensite_dominant: $('#f-intensite-dom').value ? parseInt($('#f-intensite-dom').value) : null,
+    adn_secondaire_code: $('#f-adn-sec').value || null,
+    intensite_secondaire: $('#f-intensite-sec').value ? parseInt($('#f-intensite-sec').value) : null,
+    polyvalence: $('#f-polyvalence').value ? parseInt($('#f-polyvalence').value) : null,
+    premium_percu: $('#f-premium').value ? parseInt($('#f-premium').value) : null,
+    score: $('#f-score').value ? parseFloat($('#f-score').value) : null,
+    description_ia: $('#f-description').value.trim() || null,
   };
 
-  const prev = $('#add-preview');
-  prev.innerHTML = Object.entries(pendingItem).map(([k,v]) => `<div><strong>${k}:</strong> ${Array.isArray(v)?v.join(', '):(v ?? '—')}</div>`).join('');
-  prev.classList.add('show');
-  $('#add-parse').style.display = 'none';
-  $('#add-confirm').textContent = editingId ? "Confirmer la modification" : "Confirmer l'ajout";
-  $('#add-confirm').style.display = 'inline-flex';
-});
-
-$('#add-confirm').addEventListener('click', async () => {
-  if(!pendingItem) return;
   let error;
   if(editingId){
-    const { id, ...updateFields } = pendingItem;
-    ({ error } = await supabase.from('wardrobe_items').update(updateFields).eq('id', editingId));
+    ({ error } = await supabase.from('wardrobe_items').update(payload).eq('id', editingId));
   } else {
-    ({ error } = await supabase.from('wardrobe_items').insert(pendingItem));
+    ({ error } = await supabase.from('wardrobe_items').insert({ id, ...payload }));
   }
   if(error){
     $('#add-error').textContent = "Erreur à l'enregistrement : " + error.message;
     return;
   }
   overlay.classList.remove('open');
-  $('#add-textarea').value = '';
-  pendingItem = null;
   editingId = null;
   await loadItems();
 });
