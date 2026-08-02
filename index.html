@@ -248,6 +248,38 @@
   }
   #format-help{display:none;font-size:.74rem;color:var(--text-faint);margin-top:8px;line-height:1.6;white-space:pre-wrap;background:var(--surface-2);border-radius:8px;padding:10px;}
   #format-help.show{display:block;}
+
+  .filter-block{margin-bottom:18px;}
+  .filter-label{
+    display:block;
+    font-size:.72rem;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--text-faint);
+    margin-bottom:8px;
+  }
+  .filter-block select{
+    width:100%;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:9px 12px;
+    font-size:.85rem;
+  }
+  .threshold-row{display:flex;gap:6px;}
+  .thresh-btn{
+    flex:1;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    border-radius:8px;
+    padding:8px 0;
+    font-size:.82rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .thresh-btn.active{background:var(--accent);border-color:var(--accent);color:#1a1408;}
 </style>
 </head>
 <body>
@@ -285,7 +317,6 @@
   <main>
     <div class="controls">
       <input type="search" id="search-input" placeholder="Rechercher (libellé, marque, couleur…)">
-      <select id="category-filter"><option value="">Toutes catégories</option></select>
       <select id="sort-select">
         <option value="score-desc">Score ↓</option>
         <option value="score-asc">Score ↑</option>
@@ -293,14 +324,73 @@
         <option value="attachement-desc">Attachement ↓</option>
         <option value="libelle-asc">Libellé A→Z</option>
       </select>
+      <button class="btn-ghost" id="open-filters" style="border-radius:8px;padding:9px 14px;font-size:.85rem;cursor:pointer;">
+        Filtres<span id="filter-badge" style="display:none;background:var(--accent);color:#1a1408;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700;margin-left:6px;"></span>
+      </button>
     </div>
-    <div class="chips" id="role-chips"></div>
-    <div class="chips" id="adn-chips"></div>
 
     <div id="items-container"></div>
   </main>
 
   <button id="add-fab" aria-label="Ajouter une pièce">+</button>
+</div>
+
+<div class="modal-overlay" id="filter-overlay">
+  <div class="modal">
+    <h2>Filtres</h2>
+    <p class="hint">Combine autant de critères que tu veux.</p>
+
+    <div class="filter-block">
+      <label class="filter-label">Catégorie</label>
+      <select id="category-filter"><option value="">Toutes</option></select>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Marque</label>
+      <select id="marque-filter"><option value="">Toutes</option></select>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Rôle</label>
+      <div class="chips" id="role-chips"></div>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">ADN dominant</label>
+      <div class="chips" id="adn-chips"></div>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Texture</label>
+      <div class="chips" id="texture-chips"></div>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Saison</label>
+      <div class="chips" id="saison-chips"></div>
+    </div>
+
+    <div class="filter-block">
+      <label class="filter-label">Formalité minimum</label>
+      <div class="threshold-row" id="thresh-formalite"></div>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Fréquence minimum</label>
+      <div class="threshold-row" id="thresh-frequence"></div>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Attachement minimum</label>
+      <div class="threshold-row" id="thresh-attachement"></div>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Polyvalence minimum</label>
+      <div class="threshold-row" id="thresh-polyvalence"></div>
+    </div>
+    <div class="filter-block">
+      <label class="filter-label">Premium perçu minimum</label>
+      <div class="threshold-row" id="thresh-premium"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="filters-reset">Réinitialiser</button>
+      <button class="btn" id="filters-close">Fermer</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="add-overlay">
@@ -353,6 +443,9 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 let allItems = [];
 let activeRoles = new Set();
 let activeAdn = new Set();
+let activeTexture = new Set();
+let activeSaison = new Set();
+let thresholds = { formalite:0, frequence:0, attachement:0, polyvalence:0, premium_percu:0 };
 let rolesRef = [];
 let adnRef = [];
 
@@ -405,7 +498,7 @@ async function loadReferenceData(){
     chip.addEventListener('click', () => {
       if(activeRoles.has(r.code)){ activeRoles.delete(r.code); chip.classList.remove('active'); }
       else { activeRoles.add(r.code); chip.classList.add('active'); }
-      render();
+      render(); updateFilterBadge();
     });
     chipContainer.appendChild(chip);
   });
@@ -420,10 +513,11 @@ async function loadReferenceData(){
     chip.addEventListener('click', () => {
       if(activeAdn.has(a.code)){ activeAdn.delete(a.code); chip.classList.remove('active'); }
       else { activeAdn.add(a.code); chip.classList.add('active'); }
-      render();
+      render(); updateFilterBadge();
     });
     adnContainer.appendChild(chip);
   });
+  setupThresholds();
 }
 
 async function loadItems(){
@@ -448,7 +542,78 @@ async function loadItems(){
   }
   allItems = data || [];
   populateCategoryFilter();
+  populateMarqueFilter();
+  populateTextureChips();
+  populateSaisonChips();
   render();
+}
+
+function populateMarqueFilter(){
+  const sel = $('#marque-filter');
+  sel.innerHTML = '<option value="">Toutes</option>';
+  const marques = new Set();
+  allItems.forEach(it => { if(it.marque) marques.add(it.marque.nom); });
+  [...marques].sort().forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    sel.appendChild(opt);
+  });
+}
+
+function populateTextureChips(){
+  const container = $('#texture-chips');
+  container.innerHTML = '';
+  const textures = new Set();
+  allItems.forEach(it => { if(it.texture) textures.add(it.texture); });
+  [...textures].sort().forEach(t => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = t;
+    chip.addEventListener('click', () => {
+      if(activeTexture.has(t)){ activeTexture.delete(t); chip.classList.remove('active'); }
+      else { activeTexture.add(t); chip.classList.add('active'); }
+      render(); updateFilterBadge();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function populateSaisonChips(){
+  const container = $('#saison-chips');
+  container.innerHTML = '';
+  const saisons = new Set();
+  allItems.forEach(it => { (it.saison||[]).forEach(s => saisons.add(s)); });
+  [...saisons].sort().forEach(s => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = s;
+    chip.addEventListener('click', () => {
+      if(activeSaison.has(s)){ activeSaison.delete(s); chip.classList.remove('active'); }
+      else { activeSaison.add(s); chip.classList.add('active'); }
+      render(); updateFilterBadge();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function setupThresholds(){
+  ['formalite','frequence','attachement','polyvalence','premium_percu'].forEach(key => {
+    const domId = key === 'premium_percu' ? 'thresh-premium' : 'thresh-' + key;
+    const row = document.getElementById(domId);
+    row.innerHTML = '';
+    for(let v=1; v<=5; v++){
+      const btn = document.createElement('button');
+      btn.className = 'thresh-btn';
+      btn.textContent = '≥' + v;
+      btn.addEventListener('click', () => {
+        thresholds[key] = (thresholds[key] === v) ? 0 : v;
+        [...row.children].forEach(c => c.classList.remove('active'));
+        if(thresholds[key] === v) btn.classList.add('active');
+        render(); updateFilterBadge();
+      });
+      row.appendChild(btn);
+    }
+  });
 }
 
 function populateCategoryFilter(){
@@ -465,10 +630,19 @@ function populateCategoryFilter(){
 function getFiltered(){
   const q = $('#search-input').value.trim().toLowerCase();
   const cat = $('#category-filter').value;
+  const marque = $('#marque-filter').value;
   let items = allItems.filter(it => {
     if(cat && (!it.categorie || it.categorie.categorie !== cat)) return false;
+    if(marque && (!it.marque || it.marque.nom !== marque)) return false;
     if(activeRoles.size > 0 && !activeRoles.has(it.role_code)) return false;
     if(activeAdn.size > 0 && !activeAdn.has(it.adn_dominant_code)) return false;
+    if(activeTexture.size > 0 && !activeTexture.has(it.texture)) return false;
+    if(activeSaison.size > 0 && !(it.saison||[]).some(s => activeSaison.has(s))) return false;
+    if(thresholds.formalite && (it.formalite||0) < thresholds.formalite) return false;
+    if(thresholds.frequence && (it.frequence||0) < thresholds.frequence) return false;
+    if(thresholds.attachement && (it.attachement||0) < thresholds.attachement) return false;
+    if(thresholds.polyvalence && (it.polyvalence||0) < thresholds.polyvalence) return false;
+    if(thresholds.premium_percu && (it.premium_percu||0) < thresholds.premium_percu) return false;
     if(q){
       const hay = [it.libelle, it.marque?.nom, it.couleur_principale, it.matiere, it.description_ia]
         .filter(Boolean).join(' ').toLowerCase();
@@ -553,8 +727,31 @@ function escapeHtml(s){
 }
 
 $('#search-input').addEventListener('input', render);
-$('#category-filter').addEventListener('change', render);
+$('#category-filter').addEventListener('change', () => { render(); updateFilterBadge(); });
+$('#marque-filter').addEventListener('change', () => { render(); updateFilterBadge(); });
 $('#sort-select').addEventListener('change', render);
+
+$('#open-filters').addEventListener('click', () => $('#filter-overlay').classList.add('open'));
+$('#filters-close').addEventListener('click', () => $('#filter-overlay').classList.remove('open'));
+$('#filters-reset').addEventListener('click', () => {
+  activeRoles.clear(); activeAdn.clear(); activeTexture.clear(); activeSaison.clear();
+  Object.keys(thresholds).forEach(k => thresholds[k] = 0);
+  $('#category-filter').value = '';
+  $('#marque-filter').value = '';
+  $$('#role-chips .chip, #adn-chips .chip, #texture-chips .chip, #saison-chips .chip, .thresh-btn').forEach(c => c.classList.remove('active'));
+  render(); updateFilterBadge();
+});
+
+function updateFilterBadge(){
+  let count = 0;
+  if($('#category-filter').value) count++;
+  if($('#marque-filter').value) count++;
+  count += activeRoles.size + activeAdn.size + activeTexture.size + activeSaison.size;
+  count += Object.values(thresholds).filter(v => v > 0).length;
+  const badge = $('#filter-badge');
+  if(count > 0){ badge.style.display = 'inline'; badge.textContent = count; }
+  else { badge.style.display = 'none'; }
+}
 
 const overlay = $('#add-overlay');
 $('#add-fab').addEventListener('click', () => {
