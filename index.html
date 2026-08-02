@@ -295,6 +295,7 @@
       </select>
     </div>
     <div class="chips" id="role-chips"></div>
+    <div class="chips" id="adn-chips"></div>
 
     <div id="items-container"></div>
   </main>
@@ -351,6 +352,7 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 let allItems = [];
 let activeRoles = new Set();
+let activeAdn = new Set();
 let rolesRef = [];
 let adnRef = [];
 
@@ -407,6 +409,21 @@ async function loadReferenceData(){
     });
     chipContainer.appendChild(chip);
   });
+
+  const adnContainer = $('#adn-chips');
+  adnContainer.innerHTML = '';
+  adnRef.forEach(a => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = a.libelle;
+    chip.dataset.code = a.code;
+    chip.addEventListener('click', () => {
+      if(activeAdn.has(a.code)){ activeAdn.delete(a.code); chip.classList.remove('active'); }
+      else { activeAdn.add(a.code); chip.classList.add('active'); }
+      render();
+    });
+    adnContainer.appendChild(chip);
+  });
 }
 
 async function loadItems(){
@@ -451,6 +468,7 @@ function getFiltered(){
   let items = allItems.filter(it => {
     if(cat && (!it.categorie || it.categorie.categorie !== cat)) return false;
     if(activeRoles.size > 0 && !activeRoles.has(it.role_code)) return false;
+    if(activeAdn.size > 0 && !activeAdn.has(it.adn_dominant_code)) return false;
     if(q){
       const hay = [it.libelle, it.marque?.nom, it.couleur_principale, it.matiere, it.description_ia]
         .filter(Boolean).join(' ').toLowerCase();
@@ -505,11 +523,11 @@ function render(){
       <div class="item-badges">
         ${roleBadge}
         ${adnDomBadge}
-        ${pill(it.f_formalite, 'F'+it.formalite)}
-        ${pill(it.f_frequence, 'U'+it.frequence)}
-        ${pill(it.f_attachement, 'A'+it.attachement)}
-        ${pill(it.f_polyvalence, 'P'+it.polyvalence)}
-        ${pill(it.f_premium, 'Q'+it.premium_percu)}
+        ${pill(it.f_formalite, 'Formalité '+it.formalite)}
+        ${pill(it.f_frequence, 'Fréquence '+it.frequence)}
+        ${pill(it.f_attachement, 'Attachement '+it.attachement)}
+        ${pill(it.f_polyvalence, 'Polyvalence '+it.polyvalence)}
+        ${pill(it.f_premium, 'Premium '+it.premium_percu)}
       </div>
       <div class="item-detail">
         <div class="detail-row"><strong>Couleur :</strong> ${escapeHtml(it.couleur_principale || '—')}</div>
