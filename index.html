@@ -334,6 +334,33 @@
     cursor:pointer;
   }
   .checkbox-row input[type="checkbox"]{width:16px;height:16px;accent-color:var(--accent);}
+
+  #version-footer{
+    position:fixed;
+    left:20px;bottom:20px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    color:var(--text-faint);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:.72rem;
+    padding:6px 12px;
+    border-radius:20px;
+    cursor:pointer;
+    z-index:20;
+  }
+  #changelog-body{font-size:.84rem;line-height:1.6;color:var(--text-dim);}
+  #changelog-body h3{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:600;
+    color:var(--text);font-size:1rem;margin:20px 0 2px;
+  }
+  #changelog-body h3:first-child{margin-top:0;}
+  #changelog-body .cl-date{color:var(--text-faint);font-size:.74rem;margin-bottom:8px;}
+  #changelog-body h4{
+    text-transform:uppercase;letter-spacing:.05em;font-size:.7rem;
+    color:var(--accent);margin:10px 0 4px;font-weight:600;
+  }
+  #changelog-body ul{margin:0 0 4px;padding-left:18px;}
+  #changelog-body li{margin-bottom:3px;}
 </style>
 </head>
 <body>
@@ -387,6 +414,18 @@
   </main>
 
   <button id="add-fab" aria-label="Ajouter une pièce">+</button>
+  <button id="version-footer">v1.8.0</button>
+</div>
+
+<div class="modal-overlay" id="changelog-overlay">
+  <div class="modal">
+    <h2>Historique des versions</h2>
+    <p class="hint">Source de vérité : <a href="https://github.com/Jackmilkkaa/rep-WAIMA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> sur GitHub.</p>
+    <div id="changelog-body">Chargement…</div>
+    <div class="modal-actions">
+      <button class="btn" id="changelog-close">Fermer</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="filter-overlay">
@@ -1218,6 +1257,43 @@ $('#item-form').addEventListener('submit', async (e) => {
   editingId = null;
   await loadItems();
 });
+
+$('#version-footer').addEventListener('click', async () => {
+  $('#changelog-overlay').classList.add('open');
+  const body = $('#changelog-body');
+  body.textContent = 'Chargement…';
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/Jackmilkkaa/rep-WAIMA/main/CHANGELOG.md?t=' + Date.now());
+    const md = await res.text();
+    body.innerHTML = renderChangelog(md);
+  } catch(err){
+    body.textContent = "Impossible de charger le changelog : " + err.message;
+  }
+});
+$('#changelog-close').addEventListener('click', () => $('#changelog-overlay').classList.remove('open'));
+
+function renderChangelog(md){
+  const lines = md.split('\n');
+  let html = '';
+  let inList = false;
+  for(const line of lines){
+    if(line.startsWith('## [')){
+      if(inList){ html += '</ul>'; inList = false; }
+      const m = line.match(/^## \[([^\]]+)\] - (.+)$/);
+      if(m) html += `<h3>${escapeHtml(m[1])}</h3><div class="cl-date">${escapeHtml(m[2])}</div>`;
+    } else if(line.startsWith('### ')){
+      if(inList){ html += '</ul>'; inList = false; }
+      html += `<h4>${escapeHtml(line.slice(4))}</h4>`;
+    } else if(line.startsWith('- ')){
+      if(!inList){ html += '<ul>'; inList = true; }
+      html += `<li>${escapeHtml(line.slice(2))}</li>`;
+    } else if(line.startsWith('# ') || line.startsWith('Toutes') || line.startsWith('Ce fichier')){
+      // skip titre principal et intro
+    }
+  }
+  if(inList) html += '</ul>';
+  return html || '<p>Changelog vide.</p>';
+}
 
 checkSession();
 </script>
