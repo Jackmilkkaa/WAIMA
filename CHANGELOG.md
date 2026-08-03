@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.8.1] - 2026-08-03
+
+### Modifié
+- Ajout de `wrangler.jsonc` à la racine du dépôt, pour permettre la bascule de l'hébergement de Netlify vers Cloudflare Pages (limite de crédits mensuels sur Netlify, sans équivalent chez Cloudflare pour ce volume d'usage).
+
 ## [1.8.0] - 2026-08-03
 
 ### Ajouté
