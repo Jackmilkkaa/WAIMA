@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.9.0] - 2026-08-03
+
+### Ajouté
+- Bouton "Afficher / Masquer" sur le champ mot de passe de l'écran de connexion.
+
 ## [1.8.1] - 2026-08-03
 
 ### Modifié
