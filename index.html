@@ -74,6 +74,21 @@
     font-size:.95rem;
   }
   .field input:focus{outline:none;border-color:var(--accent);}
+  .password-wrap{position:relative;}
+  .password-wrap input{padding-right:70px;}
+  #toggle-password{
+    position:absolute;
+    right:6px;top:50%;
+    transform:translateY(-50%);
+    background:none;
+    border:none;
+    color:var(--text-faint);
+    font-size:.72rem;
+    letter-spacing:.03em;
+    cursor:pointer;
+    padding:6px 8px;
+  }
+  #toggle-password:hover{color:var(--text-dim);}
   .btn{
     display:inline-flex;
     align-items:center;
@@ -376,7 +391,10 @@
       </div>
       <div class="field">
         <label for="login-password">Mot de passe</label>
-        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <div class="password-wrap">
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+          <button type="button" id="toggle-password" aria-label="Afficher le mot de passe">Afficher</button>
+        </div>
       </div>
       <button type="submit" class="btn">Se connecter</button>
       <p id="login-error"></p>
@@ -414,7 +432,7 @@
   </main>
 
   <button id="add-fab" aria-label="Ajouter une pièce">+</button>
-  <button id="version-footer">v1.8.1</button>
+  <button id="version-footer">v1.9.0</button>
 </div>
 
 <div class="modal-overlay" id="changelog-overlay">
@@ -661,6 +679,15 @@ function showApp(){
   $('#app-view').style.display = 'block';
   loadReferenceData().then(loadItems);
 }
+
+$('#toggle-password').addEventListener('click', () => {
+  const input = $('#login-password');
+  const btn = $('#toggle-password');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? 'Afficher' : 'Masquer';
+  btn.setAttribute('aria-label', showing ? 'Afficher le mot de passe' : 'Masquer le mot de passe');
+});
 
 $('#login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
