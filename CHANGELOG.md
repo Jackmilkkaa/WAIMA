@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.14.0] - 2026-08-04
+
+### Ajouté
+- Nouveau champ **famille de couleur** (`famille_couleur`), normalisation automatique de `couleur_principale` en 10 familles (Bleu, Bleu marine, Blanc, Gris, Beige/Sable/Camel, Vert, Rose/Parme/Lilas, Rouge/Bordeaux, Marron/Cognac, Noir) via trigger — se reclasse tout seul à chaque modification de la couleur, y compris pour les futures pièces.
+- Le graphique "Couleurs dominantes" de l'écran Analyse utilise ce nouveau champ au lieu du texte brut, qui fragmentait trop les nuances pour être lisible (ex. "Bleu marine", "Bleu marine profond", "Navy" ne se regroupaient pas).
+
 ## [1.13.0] - 2026-08-04
 
 ### Ajouté
