@@ -268,6 +268,33 @@
     resize:vertical;
   }
   .modal-actions{display:flex;gap:8px;margin-top:14px;}
+  .modal-large{max-width:920px;}
+  .analyse-section-title{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:600;
+    font-size:1.02rem;margin:22px 0 10px;color:var(--text);
+  }
+  .analyse-section-title:first-of-type{margin-top:4px;}
+  .tension-empty{color:var(--text-dim);font-size:.85rem;padding:10px 0;}
+  .tension-row{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 10px;border-radius:8px;
+    background:var(--surface-2);border:1px solid var(--border);
+    margin-bottom:6px;cursor:pointer;
+  }
+  .tension-row:hover{border-color:var(--accent);}
+  .tension-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0;}
+  .tension-icon.excess{color:#E64A19;}
+  .tension-icon.potential{color:#43A047;}
+  .tension-text{flex:1;min-width:0;}
+  .tension-title{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tension-detail{font-size:.72rem;color:var(--text-dim);}
+  .tension-score{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.95rem;flex-shrink:0;}
+  .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:6px;}
+  .chart-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .chart-card h3{font-size:.78rem;font-weight:600;color:var(--text-dim);margin:0 0 10px;text-transform:uppercase;letter-spacing:.03em;}
+  .chart-card canvas{max-height:220px;}
+  @media (max-width:640px){ .chart-grid{grid-template-columns:1fr;} }
+  .item-score-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
   .modal-actions .btn{width:auto;flex:1;}
   #add-error{color:#e07a5f;font-size:.8rem;margin-top:10px;white-space:pre-wrap;}
   #add-preview{
@@ -414,6 +441,9 @@
       <button class="btn-ghost" id="open-filters" style="border-radius:8px;padding:9px 14px;font-size:.85rem;cursor:pointer;">
         Filtres<span id="filter-badge" style="display:none;background:var(--accent);color:#1a1408;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700;margin-left:6px;"></span>
       </button>
+      <button class="btn-ghost" id="open-analyse" style="border-radius:8px;padding:9px 14px;font-size:.85rem;cursor:pointer;">
+        Analyse
+      </button>
     </div>
 
     <div id="items-container"></div>
@@ -496,6 +526,30 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="filters-reset">Réinitialiser</button>
       <button class="btn" id="filters-close">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="analyse-overlay">
+  <div class="modal modal-large">
+    <h2>Analyse</h2>
+    <p class="hint">Tensions Rôle / Score et vue d'ensemble de la garde-robe.</p>
+
+    <div class="analyse-section-title">Tensions Rôle / Score</div>
+    <div id="tension-list"></div>
+
+    <div class="analyse-section-title">Statistiques</div>
+    <div class="chart-grid">
+      <div class="chart-card"><h3>Répartition des rôles</h3><canvas id="chart-roles"></canvas></div>
+      <div class="chart-card"><h3>Distribution des scores</h3><canvas id="chart-scores"></canvas></div>
+      <div class="chart-card"><h3>Équilibre ADN</h3><canvas id="chart-adn"></canvas></div>
+      <div class="chart-card"><h3>Couverture formalité</h3><canvas id="chart-formalite"></canvas></div>
+      <div class="chart-card"><h3>Répartition Qualité</h3><canvas id="chart-qualite"></canvas></div>
+      <div class="chart-card"><h3>Couleurs dominantes</h3><canvas id="chart-couleurs"></canvas></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="analyse-close">Fermer</button>
     </div>
   </div>
 </div>
@@ -652,6 +706,7 @@
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import Chart from 'https://cdn.jsdelivr.net/npm/chart.js@4/auto/+esm';
 
 const SUPABASE_URL = 'https://dqqsggolhfoehmjeibxp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_uqQleZZwiJAUXqB35KpRJQ_FQftz87j';
@@ -968,6 +1023,35 @@ function pill(refObj, value){
   return `<span class="pill" style="background:${refObj.couleur}" title="${refObj.libelle}">${value}</span>`;
 }
 
+// Seuils de tension Rôle / Score.
+// capitaine/titulaire : plancher seul (signalé si en dessous).
+// remplacant : fenêtre 6.5-7.5 (signalé en dessous ET au-dessus).
+// rotation : plafond d'opportunité seul (signalé si au-dessus, potentiel sous-exploité).
+// spectateur / transfert / retraite : rôles de contexte, jamais de signal.
+function getTension(it){
+  if(it.score == null) return null;
+  const role = it.role_code;
+  const score = Number(it.score);
+  if(role === 'capitaine'){
+    if(score < 8.5) return {type:'excess', label:'Capitaine fragile', detail:`Score ${score.toFixed(1)} — sous le seuil Capitaine (8,5).`};
+  } else if(role === 'titulaire'){
+    if(score < 7.5) return {type:'excess', label:'Titulaire fragile', detail:`Score ${score.toFixed(1)} — sous le seuil Titulaire (7,5).`};
+  } else if(role === 'remplacant'){
+    if(score < 6.5) return {type:'excess', label:'Remplaçant fragile', detail:`Score ${score.toFixed(1)} — sous la fenêtre Remplaçant (6,5–7,5).`};
+    if(score > 7.5) return {type:'potential', label:'Sous-exploité', detail:`Score ${score.toFixed(1)} — au-dessus de la fenêtre Remplaçant, mérite peut-être plus d'usage.`};
+  } else if(role === 'rotation'){
+    if(score > 7.5) return {type:'potential', label:'Potentiel sous-exploité', detail:`Score ${score.toFixed(1)} — au niveau Titulaire (≥7,5) mais encore en Rotation.`};
+  }
+  return null;
+}
+
+function tensionBadge(it){
+  const t = getTension(it);
+  if(!t) return '';
+  const icon = t.type === 'excess' ? '▼' : '▲';
+  return `<span class="tension-icon ${t.type}" title="${escapeHtml(t.label)} — ${escapeHtml(t.detail)}">${icon}</span>`;
+}
+
 function render(){
   const items = getFiltered();
   $('#item-count').textContent = `${items.length} pièce${items.length>1?'s':''}`;
@@ -990,7 +1074,10 @@ function render(){
           <div class="item-title">${escapeHtml(it.libelle)}</div>
           <div class="item-sub">${escapeHtml(it.marque?.nom || '—')} · ${escapeHtml(catLabel)}</div>
         </div>
-        <div class="item-score" style="${it.score != null && scoreBand(it.score) ? `color:${scoreBand(it.score).couleur};` : ''}" title="${it.score != null && scoreBand(it.score) ? escapeHtml(scoreBand(it.score).libelle) : ''}">${it.score != null ? Number(it.score).toFixed(1) : '—'}</div>
+        <div class="item-score-wrap">
+          ${tensionBadge(it)}
+          <div class="item-score" style="${it.score != null && scoreBand(it.score) ? `color:${scoreBand(it.score).couleur};` : ''}" title="${it.score != null && scoreBand(it.score) ? escapeHtml(scoreBand(it.score).libelle) : ''}">${it.score != null ? Number(it.score).toFixed(1) : '—'}</div>
+        </div>
       </div>
       <div class="item-detail">
         ${it.photo_url ? `<img class="detail-photo" src="${it.photo_url}" alt="">` : ''}
@@ -1075,6 +1162,163 @@ function isDefaultRoles(){
   const nonRetraite = rolesRef.filter(r => r.code !== 'retraite').map(r => r.code);
   return activeRoles.size === nonRetraite.length && nonRetraite.every(c => activeRoles.has(c));
 }
+
+// ---------- Écran Analyse (tensions Rôle/Score + statistiques) ----------
+let analyseCharts = {};
+
+function destroyAnalyseCharts(){
+  Object.values(analyseCharts).forEach(c => c && c.destroy());
+  analyseCharts = {};
+}
+
+function buildTensionList(){
+  const container = $('#tension-list');
+  const tensions = allItems
+    .map(it => ({ it, t: getTension(it) }))
+    .filter(x => x.t !== null);
+
+  // Sévérité : distance à un seuil générique (7.5 hors capitaine où c'est 8.5) —
+  // plus l'écart est grand, plus la tension remonte en tête de liste.
+  const severity = ({it, t}) => {
+    const threshold = it.role_code === 'capitaine' ? 8.5 : (it.role_code === 'remplacant' ? (t.type==='excess'?6.5:7.5) : 7.5);
+    return Math.abs(Number(it.score) - threshold);
+  };
+  tensions.sort((a,b) => severity(b) - severity(a));
+
+  if(tensions.length === 0){
+    container.innerHTML = `<div class="tension-empty">Aucune tension détectée — les rôles collent aux scores actuels.</div>`;
+    return;
+  }
+  container.innerHTML = tensions.map(({it, t}) => `
+    <div class="tension-row" data-id="${escapeHtml(it.id)}">
+      <span class="tension-icon ${t.type}">${t.type === 'excess' ? '▼' : '▲'}</span>
+      <div class="tension-text">
+        <div class="tension-title">${escapeHtml(it.libelle)}</div>
+        <div class="tension-detail">${escapeHtml(t.label)} · ${escapeHtml(it.role?.libelle || it.role_code)} · ${escapeHtml(t.detail)}</div>
+      </div>
+      <div class="tension-score" style="${scoreBand(it.score) ? `color:${scoreBand(it.score).couleur};` : ''}">${Number(it.score).toFixed(1)}</div>
+    </div>
+  `).join('');
+
+  $$('#tension-list .tension-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const it = allItems.find(i => i.id === row.dataset.id);
+      if(it) openEditModal(it);
+    });
+  });
+}
+
+function countBy(items, keyFn){
+  const map = new Map();
+  items.forEach(it => {
+    const k = keyFn(it);
+    if(k === null || k === undefined) return;
+    map.set(k, (map.get(k) || 0) + 1);
+  });
+  return map;
+}
+
+function buildCharts(){
+  const activeItems = allItems.filter(it => it.role_code !== 'retraite');
+
+  // Répartition des rôles (camembert)
+  {
+    const counts = countBy(allItems, it => it.role_code);
+    const labels = rolesRef.map(r => r.libelle);
+    const data = rolesRef.map(r => counts.get(r.code) || 0);
+    const colors = rolesRef.map(r => r.couleur);
+    analyseCharts.roles = new Chart($('#chart-roles'), {
+      type: 'pie',
+      data: { labels, datasets: [{ data, backgroundColor: colors }] },
+      options: { plugins: { legend: { position: 'bottom', labels: { color: '#a89f8c', font: { size: 10 } } } } }
+    });
+  }
+
+  // Distribution des scores (barres, bandes echelle_score)
+  {
+    const bands = [...scoreEchelle].sort((a,b) => a.borne_min - b.borne_min);
+    const labels = bands.map(b => b.libelle);
+    const data = bands.map(b => activeItems.filter(it => it.score != null && it.score >= b.borne_min && it.score < b.borne_max).length);
+    const colors = bands.map(b => b.couleur);
+    analyseCharts.scores = new Chart($('#chart-scores'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: colors }] },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#a89f8c' }, grid: { color: '#3a3427' } }, y: { ticks: { color: '#a89f8c', font: { size: 9 } }, grid: { display: false } } } }
+    });
+  }
+
+  // Équilibre ADN dominant
+  {
+    const counts = countBy(activeItems, it => it.adn_dominant_code);
+    const labels = adnRef.map(a => a.libelle);
+    const data = adnRef.map(a => counts.get(a.code) || 0);
+    const colors = adnRef.map(a => a.couleur);
+    analyseCharts.adn = new Chart($('#chart-adn'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: colors }] },
+      options: { plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#a89f8c', font: { size: 9 } }, grid: { display: false } }, y: { ticks: { color: '#a89f8c' }, grid: { color: '#3a3427' } } } }
+    });
+  }
+
+  // Couverture formalité
+  {
+    const counts = countBy(activeItems, it => it.formalite);
+    const bands = (echelleRef.formalite || []);
+    const labels = bands.map(b => b.libelle);
+    const data = bands.map(b => counts.get(b.valeur) || 0);
+    const colors = bands.map(b => b.couleur);
+    analyseCharts.formalite = new Chart($('#chart-formalite'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: colors }] },
+      options: { plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#a89f8c', font: { size: 9 } }, grid: { display: false } }, y: { ticks: { color: '#a89f8c' }, grid: { color: '#3a3427' } } } }
+    });
+  }
+
+  // Répartition Qualité
+  {
+    const counts = countBy(activeItems, it => it.qualite_percue);
+    const bands = (echelleRef.qualite || []);
+    const labels = bands.map(b => b.libelle);
+    const data = bands.map(b => counts.get(b.valeur) || 0);
+    const colors = bands.map(b => b.couleur);
+    analyseCharts.qualite = new Chart($('#chart-qualite'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: colors }] },
+      options: { plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#a89f8c', font: { size: 9 } }, grid: { display: false } }, y: { ticks: { color: '#a89f8c' }, grid: { color: '#3a3427' } } } }
+    });
+  }
+
+  // Couleurs dominantes (top 8 + Autres)
+  {
+    const counts = countBy(activeItems, it => (it.couleur_principale || '').trim());
+    const sorted = [...counts.entries()].filter(([k]) => k).sort((a,b) => b[1]-a[1]);
+    const top = sorted.slice(0, 8);
+    const rest = sorted.slice(8).reduce((s,[,v]) => s+v, 0);
+    const labels = top.map(([k]) => k);
+    const data = top.map(([,v]) => v);
+    if(rest > 0){ labels.push('Autres'); data.push(rest); }
+    analyseCharts.couleurs = new Chart($('#chart-couleurs'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: '#c17f42' }] },
+      options: { plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: '#a89f8c', font: { size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } }, y: { ticks: { color: '#a89f8c' }, grid: { color: '#3a3427' } } } }
+    });
+  }
+}
+
+function openAnalyse(){
+  buildTensionList();
+  destroyAnalyseCharts();
+  buildCharts();
+  $('#analyse-overlay').classList.add('open');
+}
+
+$('#open-analyse').addEventListener('click', openAnalyse);
+$('#analyse-close').addEventListener('click', () => $('#analyse-overlay').classList.remove('open'));
 
 function updateFilterBadge(){
   let count = 0;
