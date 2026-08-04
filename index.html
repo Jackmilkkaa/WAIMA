@@ -306,19 +306,7 @@
     padding:9px 12px;
     font-size:.85rem;
   }
-  .threshold-row{display:flex;gap:6px;}
-  .thresh-btn{
-    flex:1;
-    background:var(--surface-2);
-    border:1px solid var(--border);
-    color:var(--text-dim);
-    border-radius:8px;
-    padding:8px 0;
-    font-size:.82rem;
-    font-weight:600;
-    cursor:pointer;
-  }
-  .thresh-btn.active{background:var(--accent);border-color:var(--accent);color:#1a1408;}
+  .chip-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:middle;}
 
   .form-section-title{
     font-family:'Fraunces',serif;
@@ -432,7 +420,7 @@
   </main>
 
   <button id="add-fab" aria-label="Ajouter une pièce">+</button>
-  <button id="version-footer">v1.9.0</button>
+  <button id="version-footer">v1.10.0</button>
 </div>
 
 <div class="modal-overlay" id="changelog-overlay">
@@ -481,24 +469,24 @@
     </div>
 
     <div class="filter-block">
-      <label class="filter-label">Formalité minimum</label>
-      <div class="threshold-row" id="thresh-formalite"></div>
+      <label class="filter-label">Formalité</label>
+      <div class="chips" id="chips-formalite"></div>
     </div>
     <div class="filter-block">
-      <label class="filter-label">Fréquence minimum</label>
-      <div class="threshold-row" id="thresh-frequence"></div>
+      <label class="filter-label">Fréquence</label>
+      <div class="chips" id="chips-frequence"></div>
     </div>
     <div class="filter-block">
-      <label class="filter-label">Attachement minimum</label>
-      <div class="threshold-row" id="thresh-attachement"></div>
+      <label class="filter-label">Attachement</label>
+      <div class="chips" id="chips-attachement"></div>
     </div>
     <div class="filter-block">
-      <label class="filter-label">Polyvalence minimum</label>
-      <div class="threshold-row" id="thresh-polyvalence"></div>
+      <label class="filter-label">Polyvalence</label>
+      <div class="chips" id="chips-polyvalence"></div>
     </div>
     <div class="filter-block">
-      <label class="filter-label">Premium perçu minimum</label>
-      <div class="threshold-row" id="thresh-premium"></div>
+      <label class="filter-label">Premium perçu</label>
+      <div class="chips" id="chips-premium"></div>
     </div>
 
     <div class="modal-actions">
@@ -659,7 +647,7 @@ let activeRoles = new Set();
 let activeAdn = new Set();
 let activeTexture = new Set();
 let activeSaison = new Set();
-let thresholds = { formalite:0, frequence:0, attachement:0, polyvalence:0, premium_percu:0 };
+let activeEchelle = { formalite:new Set(), frequence:new Set(), attachement:new Set(), polyvalence:new Set(), premium_percu:new Set() };
 let rolesRef = [];
 let adnRef = [];
 
@@ -835,22 +823,29 @@ function populateSaisonChips(){
 }
 
 function setupThresholds(){
-  ['formalite','frequence','attachement','polyvalence','premium_percu'].forEach(key => {
-    const domId = key === 'premium_percu' ? 'thresh-premium' : 'thresh-' + key;
-    const row = document.getElementById(domId);
-    row.innerHTML = '';
-    for(let v=1; v<=5; v++){
-      const btn = document.createElement('button');
-      btn.className = 'thresh-btn';
-      btn.textContent = '≥' + v;
-      btn.addEventListener('click', () => {
-        thresholds[key] = (thresholds[key] === v) ? 0 : v;
-        [...row.children].forEach(c => c.classList.remove('active'));
-        if(thresholds[key] === v) btn.classList.add('active');
+  const groups = [
+    {itemKey:'formalite', echelleKey:'formalite', domId:'chips-formalite'},
+    {itemKey:'frequence', echelleKey:'frequence', domId:'chips-frequence'},
+    {itemKey:'attachement', echelleKey:'attachement', domId:'chips-attachement'},
+    {itemKey:'polyvalence', echelleKey:'polyvalence', domId:'chips-polyvalence'},
+    {itemKey:'premium_percu', echelleKey:'premium', domId:'chips-premium'},
+  ];
+  groups.forEach(({itemKey, echelleKey, domId}) => {
+    const container = document.getElementById(domId);
+    container.innerHTML = '';
+    (echelleRef[echelleKey] || []).forEach(e => {
+      const chip = document.createElement('button');
+      chip.className = 'chip echelle-chip';
+      chip.title = e.libelle;
+      chip.innerHTML = `<span class="chip-dot" style="background:${e.couleur}"></span>${e.valeur}`;
+      chip.addEventListener('click', () => {
+        const set = activeEchelle[itemKey];
+        if(set.has(e.valeur)){ set.delete(e.valeur); chip.classList.remove('active'); }
+        else { set.add(e.valeur); chip.classList.add('active'); }
         render(); updateFilterBadge();
       });
-      row.appendChild(btn);
-    }
+      container.appendChild(chip);
+    });
   });
 }
 
@@ -897,11 +892,11 @@ function getFiltered(){
     if(activeAdn.size > 0 && !activeAdn.has(it.adn_dominant_code)) return false;
     if(activeTexture.size > 0 && !activeTexture.has(it.texture)) return false;
     if(activeSaison.size > 0 && !(it.saison||[]).some(s => activeSaison.has(s))) return false;
-    if(thresholds.formalite && (it.formalite||0) < thresholds.formalite) return false;
-    if(thresholds.frequence && (it.frequence||0) < thresholds.frequence) return false;
-    if(thresholds.attachement && (it.attachement||0) < thresholds.attachement) return false;
-    if(thresholds.polyvalence && (it.polyvalence||0) < thresholds.polyvalence) return false;
-    if(thresholds.premium_percu && (it.premium_percu||0) < thresholds.premium_percu) return false;
+    if(activeEchelle.formalite.size && !activeEchelle.formalite.has(it.formalite)) return false;
+    if(activeEchelle.frequence.size && !activeEchelle.frequence.has(it.frequence)) return false;
+    if(activeEchelle.attachement.size && !activeEchelle.attachement.has(it.attachement)) return false;
+    if(activeEchelle.polyvalence.size && !activeEchelle.polyvalence.has(it.polyvalence)) return false;
+    if(activeEchelle.premium_percu.size && !activeEchelle.premium_percu.has(it.premium_percu)) return false;
     if(q){
       const hay = [it.libelle, it.marque?.nom, it.couleur_principale, it.matiere, it.description_ia]
         .filter(Boolean).join(' ').toLowerCase();
@@ -1022,12 +1017,12 @@ $('#filters-close').addEventListener('click', () => $('#filter-overlay').classLi
 $('#filters-reset').addEventListener('click', () => {
   activeAdn.clear(); activeTexture.clear(); activeSaison.clear();
   activeRoles = new Set(rolesRef.filter(r => r.code !== 'retraite').map(r => r.code));
-  Object.keys(thresholds).forEach(k => thresholds[k] = 0);
+  Object.values(activeEchelle).forEach(set => set.clear());
   $('#category-filter').value = '';
   $('#sous-categorie-filter').value = '';
   populateSousCategorieFilter();
   $('#marque-filter').value = '';
-  $$('#adn-chips .chip, #texture-chips .chip, #saison-chips .chip, .thresh-btn').forEach(c => c.classList.remove('active'));
+  $$('#adn-chips .chip, #texture-chips .chip, #saison-chips .chip, .echelle-chip').forEach(c => c.classList.remove('active'));
   $$('#role-chips .chip').forEach(c => c.classList.toggle('active', activeRoles.has(c.dataset.code)));
   render(); updateFilterBadge();
 });
@@ -1044,7 +1039,7 @@ function updateFilterBadge(){
   if($('#marque-filter').value) count++;
   if(!isDefaultRoles()) count++;
   count += activeAdn.size + activeTexture.size + activeSaison.size;
-  count += Object.values(thresholds).filter(v => v > 0).length;
+  count += Object.values(activeEchelle).reduce((sum, set) => sum + set.size, 0);
   const badge = $('#filter-badge');
   if(count > 0){ badge.style.display = 'inline'; badge.textContent = count; }
   else { badge.style.display = 'none'; }
