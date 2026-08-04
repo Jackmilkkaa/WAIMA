@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.11.0] - 2026-08-04
+
+### Modifié
+- Formulaire d'ajout/modification d'une pièce : les champs des groupes Évaluation (Rôle, Formalité, Fréquence, Attachement, Polyvalence, Premium perçu) et ADN (ADN dominant, ADN secondaire) passent des menus déroulants à des chips boutons colorées, dans le même esprit que les filtres. Sélection plus rapide, couleurs reprises des tables de référence Supabase (roles, adn, echelle_*). Le groupe Caractéristiques (couleur, matière, texture) reste en saisie libre, trop de valeurs possibles pour des chips.
+- Nouveau mécanisme de gouvernance technique : le token GitHub est désormais stocké côté Supabase (table `app_secrets`, clé `github_pat`) plutôt que redemandé en clair à chaque conversation. Voir `Waima_App_Technique.md` §6.
+
 ## [1.10.0] - 2026-08-03
 
 ### Modifié
