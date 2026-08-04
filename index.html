@@ -724,6 +724,7 @@ let activeEchelle = { formalite:new Set(), frequence:new Set(), attachement:new 
 let rolesRef = [];
 let adnRef = [];
 let scoreEchelle = [];
+let famillesCouleurRef = [];
 
 function scoreBand(score){
   if(score === null || score === undefined) return null;
@@ -802,6 +803,8 @@ async function loadReferenceData(){
   }
   const { data: scoreBands } = await supabase.from('echelle_score').select('*').order('borne_min');
   scoreEchelle = scoreBands || [];
+  const { data: familles } = await supabase.from('familles_couleur').select('*');
+  famillesCouleurRef = familles || [];
   const { data: cats } = await supabase.from('categories').select('*');
   allCategories = cats || [];
   const { data: marques } = await supabase.from('marques').select('*').order('nom');
@@ -1292,18 +1295,16 @@ function buildCharts(){
     });
   }
 
-  // Couleurs dominantes (top 8 + Autres)
+  // Familles de couleur dominantes
   {
-    const counts = countBy(activeItems, it => (it.couleur_principale || '').trim());
-    const sorted = [...counts.entries()].filter(([k]) => k).sort((a,b) => b[1]-a[1]);
-    const top = sorted.slice(0, 8);
-    const rest = sorted.slice(8).reduce((s,[,v]) => s+v, 0);
-    const labels = top.map(([k]) => k);
-    const data = top.map(([,v]) => v);
-    if(rest > 0){ labels.push('Autres'); data.push(rest); }
+    const counts = countBy(activeItems, it => it.famille_couleur);
+    const sorted = [...counts.entries()].sort((a,b) => b[1]-a[1]);
+    const labels = sorted.map(([k]) => k);
+    const data = sorted.map(([,v]) => v);
+    const colors = sorted.map(([k]) => (famillesCouleurRef.find(f => f.nom === k) || {}).couleur || '#c17f42');
     analyseCharts.couleurs = new Chart($('#chart-couleurs'), {
       type: 'bar',
-      data: { labels, datasets: [{ data, backgroundColor: '#c17f42' }] },
+      data: { labels, datasets: [{ data, backgroundColor: colors }] },
       options: { plugins: { legend: { display: false } },
         scales: { x: { ticks: { color: '#a89f8c', font: { size: 9 }, autoSkip: false, maxRotation: 45, minRotation: 45 }, grid: { display: false } }, y: { ticks: { color: '#a89f8c' }, grid: { color: '#3a3427' } } } }
     });
