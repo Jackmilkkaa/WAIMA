@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.14.1] - 2026-08-04
+
+### Modifié
+- L'écran Analyse (tensions + graphiques) s'appuie désormais sur le même périmètre filtré que la liste principale (catégorie, rôle, ADN, recherche, etc.), au lieu de toujours afficher les 83 pièces. Filtre la liste, ouvre Analyse : les tensions et les graphiques ne portent que sur ce que tu vois.
+
 ## [1.14.0] - 2026-08-04
 
 ### Ajouté
