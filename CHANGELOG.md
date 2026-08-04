@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.11.1] - 2026-08-04
+
+### Corrigé
+- Le libellé du bouton version (footer, bas de l'appli) était codé en dur dans le HTML et ne suivait pas le CHANGELOG.md, contrairement au contenu de la fenêtre qu'il ouvre. Il est désormais lu dynamiquement depuis le CHANGELOG.md au démarrage de l'app (et rafraîchi au clic) — plus besoin de le mettre à jour manuellement à chaque release.
+
 ## [1.11.0] - 2026-08-04
 
 ### Modifié
