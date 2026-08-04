@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.10.0] - 2026-08-03
+
+### Modifié
+- Filtres Formalité, Fréquence, Attachement, Polyvalence et Premium perçu : remplacement des boutons de seuil minimum (`≥1`...`≥5`, un seul actif à la fois) par des chips multi-sélection par valeur exacte, dans le même esprit que les filtres Rôle et ADN. Permet notamment de sélectionner uniquement la valeur 1, impossible avec l'ancien système de seuil.
+
 ## [1.9.0] - 2026-08-03
 
 ### Ajouté
