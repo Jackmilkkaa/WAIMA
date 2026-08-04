@@ -488,6 +488,10 @@
       <label class="filter-label">Premium perçu</label>
       <div class="chips" id="chips-premium"></div>
     </div>
+    <div class="filter-block">
+      <label class="filter-label">Qualité</label>
+      <div class="chips" id="chips-qualite"></div>
+    </div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" id="filters-reset">Réinitialiser</button>
@@ -602,8 +606,14 @@
         <div class="chips" id="f-premium-chips"></div>
       </div>
       <div class="filter-block">
+        <label class="filter-label">Qualité (matière + fabrication)</label>
+        <input type="hidden" id="f-qualite">
+        <div class="chips" id="f-qualite-chips"></div>
+      </div>
+      <div class="filter-block">
         <label class="filter-label" for="f-score">Score (/10)</label>
-        <input type="number" id="f-score" step="0.1" min="0" max="10">
+        <input type="text" id="f-score" readonly disabled style="opacity:.7;cursor:not-allowed;">
+        <div style="font-size:.72rem;color:var(--text-dim);margin-top:4px;">Calculé automatiquement à partir des critères ci-dessus (formule Waïma, figée le 04/08/2026).</div>
       </div>
 
       <div class="form-section-title">ADN</div>
@@ -655,9 +665,15 @@ let activeRoles = new Set();
 let activeAdn = new Set();
 let activeTexture = new Set();
 let activeSaison = new Set();
-let activeEchelle = { formalite:new Set(), frequence:new Set(), attachement:new Set(), polyvalence:new Set(), premium_percu:new Set() };
+let activeEchelle = { formalite:new Set(), frequence:new Set(), attachement:new Set(), polyvalence:new Set(), premium_percu:new Set(), qualite_percue:new Set() };
 let rolesRef = [];
 let adnRef = [];
+let scoreEchelle = [];
+
+function scoreBand(score){
+  if(score === null || score === undefined) return null;
+  return scoreEchelle.find(b => score >= b.borne_min && score < b.borne_max) || null;
+}
 
 let currentUserId = null;
 
@@ -724,11 +740,13 @@ async function loadReferenceData(){
   const { data: adn } = await supabase.from('adn').select('*');
   adnRef = adn || [];
 
-  for(const key of ['formalite','frequence','attachement','polyvalence','premium']){
+  for(const key of ['formalite','frequence','attachement','polyvalence','premium','qualite']){
     const table = 'echelle_' + key;
     const { data: rows } = await supabase.from(table).select('*').order('valeur');
     echelleRef[key] = rows || [];
   }
+  const { data: scoreBands } = await supabase.from('echelle_score').select('*').order('borne_min');
+  scoreEchelle = scoreBands || [];
   const { data: cats } = await supabase.from('categories').select('*');
   allCategories = cats || [];
   const { data: marques } = await supabase.from('marques').select('*').order('nom');
@@ -781,7 +799,8 @@ async function loadItems(){
       f_frequence:echelle_frequence(libelle, couleur),
       f_attachement:echelle_attachement(libelle, couleur),
       f_polyvalence:echelle_polyvalence(libelle, couleur),
-      f_premium:echelle_premium(libelle, couleur)
+      f_premium:echelle_premium(libelle, couleur),
+      f_qualite:echelle_qualite(libelle, couleur)
     `);
   if(error){
     $('#items-container').innerHTML = `<div class="empty-state">Erreur de chargement : ${error.message}</div>`;
@@ -851,6 +870,7 @@ function setupThresholds(){
     {itemKey:'attachement', echelleKey:'attachement', domId:'chips-attachement'},
     {itemKey:'polyvalence', echelleKey:'polyvalence', domId:'chips-polyvalence'},
     {itemKey:'premium_percu', echelleKey:'premium', domId:'chips-premium'},
+    {itemKey:'qualite_percue', echelleKey:'qualite', domId:'chips-qualite'},
   ];
   groups.forEach(({itemKey, echelleKey, domId}) => {
     const container = document.getElementById(domId);
@@ -919,6 +939,7 @@ function getFiltered(){
     if(activeEchelle.attachement.size && !activeEchelle.attachement.has(it.attachement)) return false;
     if(activeEchelle.polyvalence.size && !activeEchelle.polyvalence.has(it.polyvalence)) return false;
     if(activeEchelle.premium_percu.size && !activeEchelle.premium_percu.has(it.premium_percu)) return false;
+    if(activeEchelle.qualite_percue.size && !activeEchelle.qualite_percue.has(it.qualite_percue)) return false;
     if(q){
       const hay = [it.libelle, it.marque?.nom, it.couleur_principale, it.matiere, it.description_ia]
         .filter(Boolean).join(' ').toLowerCase();
@@ -969,7 +990,7 @@ function render(){
           <div class="item-title">${escapeHtml(it.libelle)}</div>
           <div class="item-sub">${escapeHtml(it.marque?.nom || '—')} · ${escapeHtml(catLabel)}</div>
         </div>
-        <div class="item-score">${it.score != null ? Number(it.score).toFixed(1) : '—'}</div>
+        <div class="item-score" style="${it.score != null && scoreBand(it.score) ? `color:${scoreBand(it.score).couleur};` : ''}" title="${it.score != null && scoreBand(it.score) ? escapeHtml(scoreBand(it.score).libelle) : ''}">${it.score != null ? Number(it.score).toFixed(1) : '—'}</div>
       </div>
       <div class="item-detail">
         ${it.photo_url ? `<img class="detail-photo" src="${it.photo_url}" alt="">` : ''}
@@ -981,6 +1002,7 @@ function render(){
           ${pill(it.f_attachement, 'Attachement '+it.attachement)}
           ${pill(it.f_polyvalence, 'Polyvalence '+it.polyvalence)}
           ${pill(it.f_premium, 'Premium '+it.premium_percu)}
+          ${pill(it.f_qualite, 'Qualité '+it.qualite_percue)}
         </div>
         <div class="detail-row"><strong>Couleur :</strong> ${escapeHtml(it.couleur_principale || '—')}</div>
         <div class="detail-row"><strong>Matière :</strong> ${escapeHtml(it.matiere || '—')}</div>
@@ -1146,8 +1168,8 @@ function populateFormReferenceData(){
   renderFormChipGroup('f-adn-dom-chips', 'f-adn-dom', adnRef.map(a => ({value:a.code, label:escapeHtml(a.libelle), color:a.couleur})));
   renderFormChipGroup('f-adn-sec-chips', 'f-adn-sec', adnRef.map(a => ({value:a.code, label:escapeHtml(a.libelle), color:a.couleur})));
 
-  ['formalite','frequence','attachement','polyvalence','premium'].forEach(key => {
-    const fieldId = key === 'premium' ? 'f-premium' : 'f-' + key;
+  ['formalite','frequence','attachement','polyvalence','premium','qualite'].forEach(key => {
+    const fieldId = 'f-' + key;
     const opts = (echelleRef[key] || []).map(e => ({value:e.valeur, label:`${e.valeur} — ${escapeHtml(e.libelle)}`, color:e.couleur}));
     renderFormChipGroup(fieldId + '-chips', fieldId, opts);
   });
@@ -1235,7 +1257,8 @@ function openEditModal(it){
   setChipGroupValue('f-attachement-chips', 'f-attachement', it.attachement ?? '');
   setChipGroupValue('f-polyvalence-chips', 'f-polyvalence', it.polyvalence ?? '');
   setChipGroupValue('f-premium-chips', 'f-premium', it.premium_percu ?? '');
-  $('#f-score').value = it.score ?? '';
+  setChipGroupValue('f-qualite-chips', 'f-qualite', it.qualite_percue ?? '');
+  $('#f-score').value = it.score != null ? Number(it.score).toFixed(1) : '(pas encore calculable — complète les critères ci-dessus)';
 
   setChipGroupValue('f-adn-dom-chips', 'f-adn-dom', it.adn_dominant_code || '');
   $('#f-intensite-dom').value = it.intensite_dominant ?? '';
@@ -1320,7 +1343,8 @@ $('#item-form').addEventListener('submit', async (e) => {
     intensite_secondaire: $('#f-intensite-sec').value ? parseInt($('#f-intensite-sec').value) : null,
     polyvalence: $('#f-polyvalence').value ? parseInt($('#f-polyvalence').value) : null,
     premium_percu: $('#f-premium').value ? parseInt($('#f-premium').value) : null,
-    score: $('#f-score').value ? parseFloat($('#f-score').value) : null,
+    qualite_percue: $('#f-qualite').value ? parseInt($('#f-qualite').value) : null,
+    // score : volontairement absent — calculé côté base par trigger (trg_calculer_score_wardrobe)
     description_ia: $('#f-description').value.trim() || null,
   };
 
