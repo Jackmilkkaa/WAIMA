@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.13.0] - 2026-08-04
+
+### Ajouté
+- **Indicateur de tension Rôle / Score**, inline sur chaque carte (pastille ▼/▲ à côté du Score) et récapitulatif complet dans le nouvel écran Analyse. Seuils : Capitaine ≥8,5 · Titulaire ≥7,5 · Remplaçant fenêtre 6,5–7,5 (signalé dans les deux sens) · Rotation : signalé seulement si ≥7,5 (potentiel sous-exploité). Spectateur/Transfert/Retraité non concernés (rôles de contexte, pas de qualité).
+- **Écran Analyse** (bouton dans la barre d'outils) : liste des tensions triée par sévérité, cliquable vers la fiche pièce (même modale que la vue principale — pas de composant dupliqué) + 6 graphiques (répartition des rôles, distribution des scores, équilibre ADN, couverture formalité, répartition Qualité, couleurs dominantes), via Chart.js.
+
 ## [1.12.0] - 2026-08-04
 
 ### Ajouté
