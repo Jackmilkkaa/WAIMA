@@ -572,28 +572,34 @@
 
       <div class="form-section-title">Évaluation</div>
       <div class="filter-block">
-        <label class="filter-label" for="f-role">Rôle</label>
-        <select id="f-role"><option value="">—</option></select>
+        <label class="filter-label">Rôle</label>
+        <input type="hidden" id="f-role">
+        <div class="chips" id="f-role-chips"></div>
       </div>
       <div class="filter-block">
-        <label class="filter-label" for="f-formalite">Formalité</label>
-        <select id="f-formalite"><option value="">—</option></select>
+        <label class="filter-label">Formalité</label>
+        <input type="hidden" id="f-formalite">
+        <div class="chips" id="f-formalite-chips"></div>
       </div>
       <div class="filter-block">
-        <label class="filter-label" for="f-frequence">Fréquence</label>
-        <select id="f-frequence"><option value="">—</option></select>
+        <label class="filter-label">Fréquence</label>
+        <input type="hidden" id="f-frequence">
+        <div class="chips" id="f-frequence-chips"></div>
       </div>
       <div class="filter-block">
-        <label class="filter-label" for="f-attachement">Attachement</label>
-        <select id="f-attachement"><option value="">—</option></select>
+        <label class="filter-label">Attachement</label>
+        <input type="hidden" id="f-attachement">
+        <div class="chips" id="f-attachement-chips"></div>
       </div>
       <div class="filter-block">
-        <label class="filter-label" for="f-polyvalence">Polyvalence</label>
-        <select id="f-polyvalence"><option value="">—</option></select>
+        <label class="filter-label">Polyvalence</label>
+        <input type="hidden" id="f-polyvalence">
+        <div class="chips" id="f-polyvalence-chips"></div>
       </div>
       <div class="filter-block">
-        <label class="filter-label" for="f-premium">Premium perçu</label>
-        <select id="f-premium"><option value="">—</option></select>
+        <label class="filter-label">Premium perçu</label>
+        <input type="hidden" id="f-premium">
+        <div class="chips" id="f-premium-chips"></div>
       </div>
       <div class="filter-block">
         <label class="filter-label" for="f-score">Score (/10)</label>
@@ -602,16 +608,18 @@
 
       <div class="form-section-title">ADN</div>
       <div class="filter-block">
-        <label class="filter-label" for="f-adn-dom">ADN dominant</label>
-        <select id="f-adn-dom"><option value="">—</option></select>
+        <label class="filter-label">ADN dominant</label>
+        <input type="hidden" id="f-adn-dom">
+        <div class="chips" id="f-adn-dom-chips"></div>
       </div>
       <div class="filter-block">
         <label class="filter-label" for="f-intensite-dom">Intensité dominante (0-100)</label>
         <input type="number" id="f-intensite-dom" min="0" max="100">
       </div>
       <div class="filter-block">
-        <label class="filter-label" for="f-adn-sec">ADN secondaire</label>
-        <select id="f-adn-sec"><option value="">(aucun)</option></select>
+        <label class="filter-label">ADN secondaire</label>
+        <input type="hidden" id="f-adn-sec">
+        <div class="chips" id="f-adn-sec-chips"></div>
       </div>
       <div class="filter-block">
         <label class="filter-label" for="f-intensite-sec">Intensité secondaire (0-100)</label>
@@ -1083,15 +1091,51 @@ function populateSelect(sel, options, placeholder){
     options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
 }
 
+// Chips single-select pour les champs Évaluation/ADN du formulaire (peu de valeurs, choix rapide).
+// L'input caché #hiddenId conserve la valeur, lue/écrite exactement comme un <select> par le reste du code.
+function renderFormChipGroup(chipsId, hiddenId, items){
+  const container = $('#' + chipsId);
+  const hidden = $('#' + hiddenId);
+  container.innerHTML = '';
+  items.forEach(it => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip';
+    chip.dataset.value = it.value;
+    chip.innerHTML = it.color ? `<span class="chip-dot" style="background:${it.color}"></span>${it.label}` : it.label;
+    chip.addEventListener('click', () => {
+      const wasActive = chip.classList.contains('active');
+      container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      if(wasActive){
+        hidden.value = '';
+      } else {
+        chip.classList.add('active');
+        hidden.value = it.value;
+      }
+    });
+    container.appendChild(chip);
+  });
+}
+
+// Sélectionne visuellement le chip correspondant à `value` et met à jour l'input caché.
+// À utiliser à la place de `$('#f-xxx').value = ...` pour ces champs.
+function setChipGroupValue(chipsId, hiddenId, value){
+  const v = (value === null || value === undefined) ? '' : value;
+  $('#' + hiddenId).value = v;
+  $$('#' + chipsId + ' .chip').forEach(c => {
+    c.classList.toggle('active', String(c.dataset.value) === String(v));
+  });
+}
+
 function populateFormReferenceData(){
-  populateSelect($('#f-role'), rolesRef.map(r => ({value:r.code, label:r.libelle})), '—');
-  populateSelect($('#f-adn-dom'), adnRef.map(a => ({value:a.code, label:a.libelle})), '—');
-  populateSelect($('#f-adn-sec'), adnRef.map(a => ({value:a.code, label:a.libelle})), '(aucun)');
+  renderFormChipGroup('f-role-chips', 'f-role', rolesRef.map(r => ({value:r.code, label:escapeHtml(r.libelle), color:r.couleur})));
+  renderFormChipGroup('f-adn-dom-chips', 'f-adn-dom', adnRef.map(a => ({value:a.code, label:escapeHtml(a.libelle), color:a.couleur})));
+  renderFormChipGroup('f-adn-sec-chips', 'f-adn-sec', adnRef.map(a => ({value:a.code, label:escapeHtml(a.libelle), color:a.couleur})));
 
   ['formalite','frequence','attachement','polyvalence','premium'].forEach(key => {
-    const selId = key === 'premium' ? 'f-premium' : 'f-' + key;
-    const opts = (echelleRef[key] || []).map(e => ({value:e.valeur, label:`${e.valeur} — ${e.libelle}`}));
-    populateSelect($('#' + selId), opts, '—');
+    const fieldId = key === 'premium' ? 'f-premium' : 'f-' + key;
+    const opts = (echelleRef[key] || []).map(e => ({value:e.valeur, label:`${e.valeur} — ${escapeHtml(e.libelle)}`, color:e.couleur}));
+    renderFormChipGroup(fieldId + '-chips', fieldId, opts);
   });
 
   const catNames = [...new Set(allCategories.map(c => c.categorie))].sort();
@@ -1131,6 +1175,7 @@ function resetForm(){
   populateSousCategorieOptions('', '');
   setPhoto(null);
   $('#add-error').textContent = '';
+  $$('#item-form .chips .chip').forEach(c => c.classList.remove('active'));
 }
 
 $('#add-fab').addEventListener('click', () => {
@@ -1170,17 +1215,17 @@ function openEditModal(it){
   $$('#f-saison-group input[type=checkbox]').forEach(cb => { cb.checked = itemSaisons.includes(cb.value); });
   $('#f-saison-autre').value = itemSaisons.filter(s => !knownSaisons.includes(s)).join(', ');
 
-  $('#f-role').value = it.role_code || '';
-  $('#f-formalite').value = it.formalite ?? '';
-  $('#f-frequence').value = it.frequence ?? '';
-  $('#f-attachement').value = it.attachement ?? '';
-  $('#f-polyvalence').value = it.polyvalence ?? '';
-  $('#f-premium').value = it.premium_percu ?? '';
+  setChipGroupValue('f-role-chips', 'f-role', it.role_code || '');
+  setChipGroupValue('f-formalite-chips', 'f-formalite', it.formalite ?? '');
+  setChipGroupValue('f-frequence-chips', 'f-frequence', it.frequence ?? '');
+  setChipGroupValue('f-attachement-chips', 'f-attachement', it.attachement ?? '');
+  setChipGroupValue('f-polyvalence-chips', 'f-polyvalence', it.polyvalence ?? '');
+  setChipGroupValue('f-premium-chips', 'f-premium', it.premium_percu ?? '');
   $('#f-score').value = it.score ?? '';
 
-  $('#f-adn-dom').value = it.adn_dominant_code || '';
+  setChipGroupValue('f-adn-dom-chips', 'f-adn-dom', it.adn_dominant_code || '');
   $('#f-intensite-dom').value = it.intensite_dominant ?? '';
-  $('#f-adn-sec').value = it.adn_secondaire_code || '';
+  setChipGroupValue('f-adn-sec-chips', 'f-adn-sec', it.adn_secondaire_code || '');
   $('#f-intensite-sec').value = it.intensite_secondaire ?? '';
 
   $('#f-description').value = it.description_ia || '';
