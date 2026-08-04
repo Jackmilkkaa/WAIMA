@@ -674,6 +674,20 @@ function showApp(){
   $('#login-view').style.display = 'none';
   $('#app-view').style.display = 'block';
   loadReferenceData().then(loadItems);
+  updateVersionFooter();
+}
+
+// Le libellé du bouton (footer) reflète le CHANGELOG.md en direct, comme la modale qu'il ouvre.
+// Volontairement non bloquant : un échec réseau laisse juste l'ancien libellé affiché.
+async function updateVersionFooter(){
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/Jackmilkkaa/rep-WAIMA/main/CHANGELOG.md?t=' + Date.now());
+    const md = await res.text();
+    const m = md.match(/^## \[([^\]]+)\]/m);
+    if(m) $('#version-footer').textContent = 'v' + m[1];
+  } catch(err){
+    // silencieux
+  }
 }
 
 $('#toggle-password').addEventListener('click', () => {
@@ -1327,6 +1341,7 @@ $('#item-form').addEventListener('submit', async (e) => {
 
 $('#version-footer').addEventListener('click', async () => {
   $('#changelog-overlay').classList.add('open');
+  updateVersionFooter();
   const body = $('#changelog-body');
   body.textContent = 'Chargement…';
   try {
