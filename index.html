@@ -533,7 +533,7 @@
 <div class="modal-overlay" id="analyse-overlay">
   <div class="modal modal-large">
     <h2>Analyse</h2>
-    <p class="hint">Tensions Rôle / Score et vue d'ensemble de la garde-robe.</p>
+    <p class="hint" id="analyse-scope-hint">Tensions Rôle / Score et vue d'ensemble de la garde-robe.</p>
 
     <div class="analyse-section-title">Tensions Rôle / Score</div>
     <div id="tension-list"></div>
@@ -1174,9 +1174,9 @@ function destroyAnalyseCharts(){
   analyseCharts = {};
 }
 
-function buildTensionList(){
+function buildTensionList(scope){
   const container = $('#tension-list');
-  const tensions = allItems
+  const tensions = scope
     .map(it => ({ it, t: getTension(it) }))
     .filter(x => x.t !== null);
 
@@ -1221,12 +1221,12 @@ function countBy(items, keyFn){
   return map;
 }
 
-function buildCharts(){
-  const activeItems = allItems.filter(it => it.role_code !== 'retraite');
+function buildCharts(scope){
+  const activeItems = scope.filter(it => it.role_code !== 'retraite');
 
   // Répartition des rôles (camembert)
   {
-    const counts = countBy(allItems, it => it.role_code);
+    const counts = countBy(scope, it => it.role_code);
     const labels = rolesRef.map(r => r.libelle);
     const data = rolesRef.map(r => counts.get(r.code) || 0);
     const colors = rolesRef.map(r => r.couleur);
@@ -1312,9 +1312,11 @@ function buildCharts(){
 }
 
 function openAnalyse(){
-  buildTensionList();
+  const scope = getFiltered();
+  $('#analyse-scope-hint').textContent = `${scope.length} pièce(s) affichée(s) — reflète les filtres et la recherche actifs sur la liste principale.`;
+  buildTensionList(scope);
   destroyAnalyseCharts();
-  buildCharts();
+  buildCharts(scope);
   $('#analyse-overlay').classList.add('open');
 }
 
