@@ -4,6 +4,17 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.12.0] - 2026-08-04
+
+### Ajouté
+- Nouveau critère **Qualité** (matière + fabrication), échelle 1-5 : Bas de gamme / Modeste / Standard / Solide / Premium. Distinct de "Premium perçu" qui reste une mesure purement visuelle.
+- Code couleur sur le Score affiché (carte pièce), basé sur les bandes déjà documentées dans `Waima_DataDictionary.md` §3 (9-10 majeure, 8-8,9 très bonne, 7-7,9 utile, 6-6,9 correcte, 5-5,9 fragile, <5 sortie probable).
+- Filtre par Qualité dans le panneau de filtres, au même endroit que Polyvalence/Premium perçu.
+
+### Modifié
+- Le **Score** n'est plus un champ éditable manuellement dans le formulaire : il est recalculé automatiquement en base (trigger Postgres) dès qu'un critère d'entrée change (Polyvalence, Qualité, Premium perçu, Fréquence, Attachement, Intensité ADN dominant), à partir de la formule Waïma figée le 04/08/2026. Le champ Score du formulaire devient un affichage en lecture seule.
+- Les pièces au rôle **Retraité** conservent leur score historique figé — non recalculé par la formule, à titre de mémoire du système.
+
 ## [1.11.1] - 2026-08-04
 
 ### Corrigé
