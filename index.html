@@ -721,7 +721,7 @@ import Chart from 'https://cdn.jsdelivr.net/npm/chart.js@4/auto/+esm';
 
 const SUPABASE_URL = 'https://dqqsggolhfoehmjeibxp.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_uqQleZZwiJAUXqB35KpRJQ_FQftz87j';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { db: { schema: 'waima' } });
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
