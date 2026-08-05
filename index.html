@@ -828,7 +828,7 @@ function showLogin(){
 function showApp(){
   $('#login-view').style.display = 'none';
   $('#app-view').style.display = 'block';
-  loadProfile().then(() => loadReferenceData().then(loadItems));
+  loadProfile().then(() => loadReferenceData().then(loadItems).then(processPendingPhotos));
   updateVersionFooter();
 }
 
@@ -1471,6 +1471,36 @@ async function uploadPhoto(file){
   const { data } = supabase.storage.from('wardrobe-photos').getPublicUrl(path);
   setPhoto(data.publicUrl);
   $('#photo-status').textContent = 'Photo ajoutée.';
+}
+
+// Photos déposées par Claude en attente d'upload (voir photos_en_attente) —
+// traitement silencieux à l'ouverture de l'appli : décodage base64 -> Blob -> Storage -> photo_url.
+async function processPendingPhotos(){
+  const { data: pending, error } = await supabase.from('photos_en_attente').select('*').eq('user_id', currentUserId);
+  if(error || !pending || pending.length === 0) return;
+
+  let uploaded = 0;
+  for(const p of pending){
+    try {
+      const byteChars = atob(p.base64_data);
+      const byteNumbers = new Array(byteChars.length);
+      for(let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNumbers)], { type: p.mime_type });
+      const ext = (p.mime_type.split('/')[1] || 'jpg').replace('jpeg','jpg');
+      const path = `${currentUserId}/${Date.now()}-${p.id.slice(0,8)}.${ext}`;
+
+      const { error: upErr } = await supabase.storage.from('wardrobe-photos').upload(path, blob, { upsert: true, contentType: p.mime_type });
+      if(upErr) continue;
+
+      const { data: urlData } = supabase.storage.from('wardrobe-photos').getPublicUrl(path);
+      await supabase.from('wardrobe_items').update({ photo_url: urlData.publicUrl, photo_fit: p.fit }).eq('id', p.item_id);
+      await supabase.from('photos_en_attente').delete().eq('id', p.id);
+      uploaded++;
+    } catch(e){
+      // une photo en échec ne doit pas bloquer les suivantes
+    }
+  }
+  if(uploaded > 0) await loadItems();
 }
 
 $('#f-photo-camera').addEventListener('change', (e) => uploadPhoto(e.target.files[0]));
