@@ -301,6 +301,33 @@
   .chart-card h3{font-size:.78rem;font-weight:600;color:var(--text-dim);margin:0 0 10px;text-transform:uppercase;letter-spacing:.03em;}
   .chart-card canvas{max-height:220px;}
   @media (max-width:640px){ .chart-grid{grid-template-columns:1fr;} }
+  .profil-switch{
+    display:flex;justify-content:center;margin-top:4px;
+  }
+  .profil-switch-track{
+    display:inline-flex;
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:4px;
+    gap:2px;
+  }
+  .profil-switch-track button{
+    display:flex;align-items:center;gap:6px;
+    padding:8px 18px;
+    border-radius:999px;
+    border:none;
+    background:transparent;
+    color:var(--text-dim);
+    font-size:.82rem;
+    cursor:pointer;
+    transition:background .15s, color .15s;
+  }
+  .profil-switch-track button.active{
+    background:var(--accent);
+    color:#1a1408;
+    font-weight:600;
+  }
   .item-score-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
   .modal-actions .btn{width:auto;flex:1;}
   #add-error{color:#e07a5f;font-size:.8rem;margin-top:10px;white-space:pre-wrap;}
@@ -544,11 +571,10 @@
   <div class="modal">
     <h2>Profil</h2>
     <p class="hint">Détermine le vocabulaire utilisé pour l'ADN dominant (les autres réglages restent partagés).</p>
-    <div class="filter-block">
-      <label class="filter-label">Profil</label>
-      <div class="photo-fit-toggle" id="profil-toggle">
-        <button type="button" data-profil="homme">Homme</button>
-        <button type="button" data-profil="femme">Femme</button>
+    <div class="profil-switch">
+      <div class="profil-switch-track" id="profil-toggle">
+        <button type="button" data-profil="homme"><span>♂</span> Homme</button>
+        <button type="button" data-profil="femme"><span>♀</span> Femme</button>
       </div>
     </div>
     <div class="modal-actions">
