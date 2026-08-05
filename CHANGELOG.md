@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.17.0] - 2026-08-04
+
+### Ajouté
+- **Système ADN bi-genré** : les 6 archétypes (Patriarche/Stratège/Leader/Dandy/Homme Moderne/Mâle) ont désormais un libellé homme ET un libellé femme (La Patronne, La Stratège, La Rayonnante, L'Élégante, L'Essentielle, La Déterminée) — même code, même couleur, même logique de scoring, seul le mot affiché change. Chaque archétype a aussi une signature visuelle par genre (coupes, matières, couleurs typiques), affichée en infobulle sur les badges ADN.
+- **Écran Profil** (bouton dans la barre d'outils) : bascule Homme/Femme qui détermine quel jeu de libellés ADN s'affiche partout (cartes, filtres, formulaire, graphiques). Table `profiles` conçue pour accueillir d'autres réglages personnels à l'avenir.
+
 ## [1.16.0] - 2026-08-04
 
 ### Modifié
