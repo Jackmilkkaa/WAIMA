@@ -184,12 +184,19 @@
   .item-text{flex:1;min-width:0;}
   .detail-photo{
     width:100%;
-    max-height:280px;
+    height:280px;
     object-fit:cover;
+    background:var(--surface-2);
     border-radius:8px;
     margin-bottom:12px;
     display:block;
   }
+  .photo-fit-toggle{display:flex;gap:6px;margin-top:8px;}
+  .photo-fit-toggle button{
+    flex:1;padding:7px 10px;font-size:.76rem;border-radius:7px;cursor:pointer;
+    background:var(--surface-2);border:1px solid var(--border);color:var(--text-dim);
+  }
+  .photo-fit-toggle button.active{background:var(--accent);color:#1a1408;border-color:var(--accent);font-weight:600;}
   .item-title{font-weight:600;font-size:.92rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .item-sub{color:var(--text-dim);font-size:.78rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .item-score{
@@ -563,8 +570,12 @@
       <div class="form-section-title" style="margin-top:0;padding-top:0;border-top:none;">Photo</div>
       <div class="filter-block">
         <div id="photo-preview-wrap">
-          <img id="photo-preview" style="display:none;width:100%;max-height:220px;object-fit:cover;border-radius:8px;">
+          <img id="photo-preview" style="display:none;width:100%;height:220px;object-fit:contain;background:var(--surface-2);border-radius:8px;">
           <div id="photo-empty" style="display:flex;align-items:center;justify-content:center;height:120px;background:var(--surface-2);border:1px dashed var(--border);border-radius:8px;color:var(--text-faint);font-size:.8rem;">Aucune photo</div>
+        </div>
+        <div class="photo-fit-toggle" id="photo-fit-toggle">
+          <button type="button" data-fit="contain">Contenir (jamais recadrée)</button>
+          <button type="button" data-fit="cover">Remplir (recadrée, centrée)</button>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;">
           <label class="btn btn-ghost" style="cursor:pointer;text-align:center;">
@@ -1083,7 +1094,7 @@ function render(){
         </div>
       </div>
       <div class="item-detail">
-        ${it.photo_url ? `<img class="detail-photo" src="${it.photo_url}" alt="">` : ''}
+        ${it.photo_url ? `<img class="detail-photo" style="object-fit:${it.photo_fit || 'contain'};" src="${it.photo_url}" alt="">` : ''}
         <div class="item-badges">
           ${roleBadge}
           ${adnDomBadge}
@@ -1339,9 +1350,17 @@ function updateFilterBadge(){
 const overlay = $('#add-overlay');
 let editingId = null;
 let currentPhotoUrl = null;
+let currentPhotoFit = 'contain';
 let allCategories = [];
 let allMarques = [];
 let echelleRef = {};
+
+function setPhotoFit(fit){
+  currentPhotoFit = (fit === 'cover') ? 'cover' : 'contain';
+  $('#photo-preview').style.objectFit = currentPhotoFit;
+  $$('#photo-fit-toggle button').forEach(b => b.classList.toggle('active', b.dataset.fit === currentPhotoFit));
+}
+$$('#photo-fit-toggle button').forEach(b => b.addEventListener('click', () => setPhotoFit(b.dataset.fit)));
 
 function setPhoto(url){
   currentPhotoUrl = url || null;
@@ -1457,6 +1476,7 @@ function resetForm(){
   $('#f-marque-new').style.display = 'none';
   populateSousCategorieOptions('', '');
   setPhoto(null);
+  setPhotoFit('contain');
   $('#add-error').textContent = '';
   $$('#item-form .chips .chip').forEach(c => c.classList.remove('active'));
 }
@@ -1478,6 +1498,7 @@ function openEditModal(it){
   $('#add-submit').textContent = 'Enregistrer les modifications';
   $('#add-error').textContent = '';
   setPhoto(it.photo_url);
+  setPhotoFit(it.photo_fit || 'contain');
 
   $('#f-id').value = it.id;
   $('#f-id').disabled = true;
@@ -1576,6 +1597,7 @@ $('#item-form').addEventListener('submit', async (e) => {
     libelle,
     categorie_id, marque_id,
     photo_url: currentPhotoUrl,
+    photo_fit: currentPhotoFit,
     couleur_principale: $('#f-couleur').value.trim() || null,
     matiere: $('#f-matiere').value.trim() || null,
     texture: $('#f-texture').value.trim() || null,
