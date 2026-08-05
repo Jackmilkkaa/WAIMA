@@ -802,7 +802,7 @@ function adnSignature(a){
 function adnTooltip(a){
   if(!a) return '';
   const parts = [a.registre, adnSignature(a)].filter(Boolean);
-  return escapeHtml(parts.join(' — '));
+  return parts.join(' — ');
 }
 
 async function loadProfile(){
@@ -1165,7 +1165,7 @@ function render(){
   container.innerHTML = items.map(it => {
     const catLabel = it.categorie ? (it.categorie.sous_categorie ? `${it.categorie.categorie} · ${it.categorie.sous_categorie}` : it.categorie.categorie) : '—';
     const roleBadge = it.role ? `<span class="badge" style="background:${it.role.couleur}">${it.role.libelle}</span>` : '';
-    const adnDomBadge = it.adn_dom ? `<span class="badge" style="background:${it.adn_dom.couleur};color:#f1ead9" title="${adnTooltip(it.adn_dom)}">${escapeHtml(adnLabel(it.adn_dom))}</span>` : '';
+    const adnDomBadge = it.adn_dom ? `<span class="badge" style="background:${it.adn_dom.couleur};color:#f1ead9" title="${escapeHtml(adnTooltip(it.adn_dom))}">${escapeHtml(adnLabel(it.adn_dom))}</span>` : '';
     const saisonTxt = Array.isArray(it.saison) ? it.saison.join(', ') : '';
 
     return `
@@ -1197,7 +1197,7 @@ function render(){
         <div class="detail-row"><strong>Matière :</strong> ${escapeHtml(it.matiere || '—')}</div>
         <div class="detail-row"><strong>Texture :</strong> ${escapeHtml(it.texture || '—')}</div>
         <div class="detail-row"><strong>Saison :</strong> ${escapeHtml(saisonTxt || '—')}</div>
-        ${it.adn_sec ? `<div class="detail-row" title="${adnTooltip(it.adn_sec)}"><strong>ADN secondaire :</strong> ${escapeHtml(adnLabel(it.adn_sec))} (${it.intensite_secondaire})</div>` : ''}
+        ${it.adn_sec ? `<div class="detail-row" title="${escapeHtml(adnTooltip(it.adn_sec))}"><strong>ADN secondaire :</strong> ${escapeHtml(adnLabel(it.adn_sec))} (${it.intensite_secondaire})</div>` : ''}
         ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
         <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
         ${it.description_ia ? `<div class="detail-row" style="margin-top:8px;">${escapeHtml(it.description_ia)}</div>` : ''}
