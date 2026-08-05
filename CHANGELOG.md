@@ -4,6 +4,14 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.15.0] - 2026-08-04
+
+### Modifié
+- La photo en vue détail (`object-fit`) passe de "Remplir" (recadrage centré, parfois moche/aléatoire) à **"Contenir" par défaut** : plus aucune photo n'est rognée, l'image entière est toujours visible avec un léger fond neutre si besoin.
+
+### Ajouté
+- Interrupteur **Contenir / Remplir** dans le formulaire photo, par pièce — pour les cas où le recadrage "Remplir" rend en fait mieux (photo déjà bien cadrée par exemple), on peut le choisir manuellement plutôt que de le subir par défaut.
+
 ## [1.14.1] - 2026-08-04
 
 ### Modifié
