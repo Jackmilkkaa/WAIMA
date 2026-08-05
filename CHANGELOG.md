@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.18.0] - 2026-08-04
+
+### Ajouté
+- **Relais photo via Claude** : nouvelle table `photos_en_attente` — quand une photo est envoyée à Claude en conversation (au lieu de l'appli), Claude la dépose en base (encodée) plutôt que de demander un ré-upload manuel. À l'ouverture de l'appli, `processPendingPhotos()` détecte silencieusement les photos en attente pour l'utilisateur connecté, les décode, les envoie dans le bucket `wardrobe-photos` (avec les vrais droits d'écriture Storage de la session), met à jour `photo_url`/`photo_fit` de la pièce concernée, puis nettoie la table. Contourne la limite technique de Claude (pas d'accès en écriture au Storage Supabase, seulement à la base de données).
+
 ## [1.17.2] - 2026-08-04
 
 ### Corrigé
