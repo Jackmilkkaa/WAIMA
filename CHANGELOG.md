@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.17.2] - 2026-08-04
+
+### Corrigé
+- Infobulles ADN affichant `&amp;` au lieu de `&` — le texte était échappé HTML avant d'être affecté directement en propriété JS (`.title =`), qui ne décode jamais les entités. L'échappement est maintenant appliqué seulement là où le texte est réellement injecté dans du HTML (badges, ligne de détail), plus sur l'affectation directe des chips de filtre.
+
 ## [1.17.1] - 2026-08-04
 
 ### Modifié
