@@ -431,7 +431,10 @@
         <h1>Waïma</h1>
         <p id="item-count"></p>
       </div>
-      <button id="signout-btn">Déconnexion</button>
+      <div style="display:flex;gap:10px;align-items:start;">
+        <button id="open-profile" title="Profil" style="background:none;border:none;color:var(--text-faint);font-size:.78rem;cursor:pointer;padding:4px;">Profil</button>
+        <button id="signout-btn">Déconnexion</button>
+      </div>
     </div>
   </header>
 
@@ -533,6 +536,23 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="filters-reset">Réinitialiser</button>
       <button class="btn" id="filters-close">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="profile-overlay">
+  <div class="modal">
+    <h2>Profil</h2>
+    <p class="hint">Détermine le vocabulaire utilisé pour l'ADN dominant (les autres réglages restent partagés).</p>
+    <div class="filter-block">
+      <label class="filter-label">Profil</label>
+      <div class="photo-fit-toggle" id="profil-toggle">
+        <button type="button" data-profil="homme">Homme</button>
+        <button type="button" data-profil="femme">Femme</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="profile-close">Fermer</button>
     </div>
   </div>
 </div>
@@ -743,6 +763,32 @@ function scoreBand(score){
 }
 
 let currentUserId = null;
+let currentProfil = 'homme';
+
+function adnLabel(a){
+  if(!a) return '';
+  return currentProfil === 'femme' ? (a.libelle_femme || a.libelle_homme) : a.libelle_homme;
+}
+function adnSignature(a){
+  if(!a) return '';
+  return currentProfil === 'femme' ? (a.signature_visuelle_femme || '') : (a.signature_visuelle_homme || '');
+}
+function adnTooltip(a){
+  if(!a) return '';
+  const parts = [a.registre, adnSignature(a)].filter(Boolean);
+  return escapeHtml(parts.join(' — '));
+}
+
+async function loadProfile(){
+  const { data, error } = await supabase.from('profiles').select('*').eq('user_id', currentUserId).maybeSingle();
+  if(data){
+    currentProfil = data.profil;
+  } else {
+    // Première connexion : pas de ligne encore, on en crée une par défaut
+    await supabase.from('profiles').insert({ user_id: currentUserId, profil: 'homme' });
+    currentProfil = 'homme';
+  }
+}
 
 async function checkSession(){
   const { data:{ session } } = await supabase.auth.getSession();
@@ -756,7 +802,7 @@ function showLogin(){
 function showApp(){
   $('#login-view').style.display = 'none';
   $('#app-view').style.display = 'block';
-  loadReferenceData().then(loadItems);
+  loadProfile().then(() => loadReferenceData().then(loadItems));
   updateVersionFooter();
 }
 
@@ -801,6 +847,21 @@ $('#signout-btn').addEventListener('click', async () => {
   showLogin();
 });
 
+$('#open-profile').addEventListener('click', () => {
+  $$('#profil-toggle button').forEach(b => b.classList.toggle('active', b.dataset.profil === currentProfil));
+  $('#profile-overlay').classList.add('open');
+});
+$('#profile-close').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
+$$('#profil-toggle button').forEach(b => b.addEventListener('click', async () => {
+  if(b.dataset.profil === currentProfil) return;
+  currentProfil = b.dataset.profil;
+  $$('#profil-toggle button').forEach(btn => btn.classList.toggle('active', btn.dataset.profil === currentProfil));
+  await supabase.from('profiles').update({ profil: currentProfil, updated_at: new Date().toISOString() }).eq('user_id', currentUserId);
+  await loadReferenceData();
+  populateFormReferenceData();
+  render();
+}));
+
 async function loadReferenceData(){
   const { data: roles } = await supabase.from('roles').select('*').order('ordre');
   rolesRef = roles || [];
@@ -842,7 +903,8 @@ async function loadReferenceData(){
   adnRef.forEach(a => {
     const chip = document.createElement('button');
     chip.className = 'chip';
-    chip.textContent = a.libelle;
+    chip.textContent = adnLabel(a);
+    chip.title = adnTooltip(a);
     chip.dataset.code = a.code;
     chip.addEventListener('click', () => {
       if(activeAdn.has(a.code)){ activeAdn.delete(a.code); chip.classList.remove('active'); }
@@ -862,8 +924,8 @@ async function loadItems(){
       categorie:categories(categorie, sous_categorie),
       marque:marques(nom),
       role:roles(code, libelle, couleur),
-      adn_dom:adn!wardrobe_items_adn_dominant_code_fkey(libelle, couleur, registre),
-      adn_sec:adn!wardrobe_items_adn_secondaire_code_fkey(libelle, couleur, registre),
+      adn_dom:adn!wardrobe_items_adn_dominant_code_fkey(libelle_homme, libelle_femme, couleur, registre, signature_visuelle_homme, signature_visuelle_femme),
+      adn_sec:adn!wardrobe_items_adn_secondaire_code_fkey(libelle_homme, libelle_femme, couleur, registre, signature_visuelle_homme, signature_visuelle_femme),
       f_formalite:echelle_formalite(libelle, couleur),
       f_frequence:echelle_frequence(libelle, couleur),
       f_attachement:echelle_attachement(libelle, couleur),
@@ -1077,7 +1139,7 @@ function render(){
   container.innerHTML = items.map(it => {
     const catLabel = it.categorie ? (it.categorie.sous_categorie ? `${it.categorie.categorie} · ${it.categorie.sous_categorie}` : it.categorie.categorie) : '—';
     const roleBadge = it.role ? `<span class="badge" style="background:${it.role.couleur}">${it.role.libelle}</span>` : '';
-    const adnDomBadge = it.adn_dom ? `<span class="badge" style="background:${it.adn_dom.couleur};color:#f1ead9">${it.adn_dom.libelle}</span>` : '';
+    const adnDomBadge = it.adn_dom ? `<span class="badge" style="background:${it.adn_dom.couleur};color:#f1ead9" title="${adnTooltip(it.adn_dom)}">${escapeHtml(adnLabel(it.adn_dom))}</span>` : '';
     const saisonTxt = Array.isArray(it.saison) ? it.saison.join(', ') : '';
 
     return `
@@ -1109,7 +1171,7 @@ function render(){
         <div class="detail-row"><strong>Matière :</strong> ${escapeHtml(it.matiere || '—')}</div>
         <div class="detail-row"><strong>Texture :</strong> ${escapeHtml(it.texture || '—')}</div>
         <div class="detail-row"><strong>Saison :</strong> ${escapeHtml(saisonTxt || '—')}</div>
-        ${it.adn_sec ? `<div class="detail-row"><strong>ADN secondaire :</strong> ${escapeHtml(it.adn_sec.libelle)} (${it.intensite_secondaire})</div>` : ''}
+        ${it.adn_sec ? `<div class="detail-row" title="${adnTooltip(it.adn_sec)}"><strong>ADN secondaire :</strong> ${escapeHtml(adnLabel(it.adn_sec))} (${it.intensite_secondaire})</div>` : ''}
         ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
         <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
         ${it.description_ia ? `<div class="detail-row" style="margin-top:8px;">${escapeHtml(it.description_ia)}</div>` : ''}
@@ -1265,7 +1327,7 @@ function buildCharts(scope){
   // Équilibre ADN dominant
   {
     const counts = countBy(activeItems, it => it.adn_dominant_code);
-    const labels = adnRef.map(a => a.libelle);
+    const labels = adnRef.map(a => adnLabel(a));
     const data = adnRef.map(a => counts.get(a.code) || 0);
     const colors = adnRef.map(a => a.couleur);
     analyseCharts.adn = new Chart($('#chart-adn'), {
@@ -1431,8 +1493,8 @@ function setChipGroupValue(chipsId, hiddenId, value){
 
 function populateFormReferenceData(){
   renderFormChipGroup('f-role-chips', 'f-role', rolesRef.map(r => ({value:r.code, label:escapeHtml(r.libelle), color:r.couleur})));
-  renderFormChipGroup('f-adn-dom-chips', 'f-adn-dom', adnRef.map(a => ({value:a.code, label:escapeHtml(a.libelle), color:a.couleur})));
-  renderFormChipGroup('f-adn-sec-chips', 'f-adn-sec', adnRef.map(a => ({value:a.code, label:escapeHtml(a.libelle), color:a.couleur})));
+  renderFormChipGroup('f-adn-dom-chips', 'f-adn-dom', adnRef.map(a => ({value:a.code, label:escapeHtml(adnLabel(a)), color:a.couleur})));
+  renderFormChipGroup('f-adn-sec-chips', 'f-adn-sec', adnRef.map(a => ({value:a.code, label:escapeHtml(adnLabel(a)), color:a.couleur})));
 
   ['formalite','frequence','attachement','polyvalence','premium','qualite'].forEach(key => {
     const fieldId = 'f-' + key;
