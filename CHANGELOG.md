@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.16.0] - 2026-08-04
+
+### Modifié
+- **Consolidation infra** : le projet Supabase Waïma (renommé `LR_Perso` dans le dashboard, ref inchangée `dqqsggolhfoehmjeibxp`) héberge maintenant aussi l'app Bass, dans un schéma Postgres séparé (`bass`). Les tables Waïma sont déplacées de `public` vers un schéma dédié `waima`. Le client Supabase JS cible désormais explicitement `db:{schema:'waima'}`.
+- **Action manuelle requise côté dashboard** : ajouter `waima` et `bass` dans Project Settings → API → Exposed Schemas, sinon l'API ne sert aucune requête.
+
 ## [1.15.0] - 2026-08-04
 
 ### Modifié
