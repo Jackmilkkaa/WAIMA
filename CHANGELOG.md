@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.17.1] - 2026-08-04
+
+### Modifié
+- Sélecteur Profil (Homme/Femme) redessiné : interrupteur pilule compact et centré avec icônes, au lieu de deux gros boutons pleine largeur.
+
 ## [1.17.0] - 2026-08-04
 
 ### Ajouté
