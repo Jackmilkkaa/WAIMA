@@ -4,6 +4,17 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.19.0] - 2026-08-06
+
+### Ajouté
+- **Écran Analyse — statistiques réorganisées en 4 onglets** : *Vue d'ensemble* (rôles, scores, formalité, qualité), *Catégories* (répartition par catégorie avec drill-down au clic vers les sous-catégories), *Usage & valeur* (fréquence de portage, attachement, polyvalence, premium perçu — jusqu'ici absents des statistiques) et *Style & saison* (ADN, couleurs, saison).
+- **Graphique Saison** : nouvelle répartition par saison (un article multi-saison compte dans chaque saison qu'il couvre).
+- **Graphique Catégorie/Sous-catégorie interactif** : clic sur une barre de catégorie → bascule sur le détail des sous-catégories de cette catégorie, avec bouton retour.
+
+### Modifié
+- **Graphique ADN** : intègre désormais l'ADN secondaire en plus du dominant (une pièce alimente les deux registres qu'elle porte), au lieu du seul ADN dominant. Le titre précise la méthode de cumul.
+- Les graphiques ne sont construits que pour l'onglet actif (lazy build), et détruits au changement d'onglet — évite les soucis de dimensionnement de Chart.js sur des canvas cachés et allège le rendu.
+
 ## [1.18.0] - 2026-08-04
 
 ### Ajouté
