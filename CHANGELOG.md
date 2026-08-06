@@ -4,6 +4,14 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.22.0] - 2026-08-06
+
+### Ajouté
+- **Bouton Fermer fixe (✕) généralisé à toutes les modales** : Filtres, Ajouter/éditer une pièce, Profil, et Historique des versions ont désormais le même en-tête sticky que la modale Analyse, avec un ✕ toujours visible en haut à droite — plus besoin de descendre tout en bas pour fermer, notamment sur la modale Filtres (longue liste de critères) et la modale d'édition d'une pièce (formulaire long).
+
+### Modifié
+- Les boutons "Fermer" redondants en bas de page sont retirés (Changelog, Filtres, Profil) — seule l'action "Réinitialiser" reste en bas de la modale Filtres, à côté du ✕ désormais en haut. Sur la modale d'édition, "Annuler" et "Enregistrer" restent en bas comme avant ; le ✕ en haut fait la même chose qu'"Annuler" (ferme sans enregistrer).
+
 ## [1.21.2] - 2026-08-06
 
 ### Corrigé
