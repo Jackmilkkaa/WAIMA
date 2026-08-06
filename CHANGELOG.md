@@ -4,6 +4,17 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.23.0] - 2026-08-06
+
+### Ajouté
+- **Feature Mercato** : possibilité de cartographier des pièces pas encore possédées ("recrues potentielles"), avec toute la richesse de la fiche existante (catégorie, ADN, formalité, couleur, texture, description...).
+  - **Nouveau rôle "Recrue potentielle"** (8ᵉ valeur dans `waima.roles`, couleur cyan `#06b6d4`, en dernière position) : une recrue devient une pièce active de la garde-robe simplement en changeant son rôle (Titulaire, Rotation...) via le formulaire existant — pas de champ de statut séparé, pas de cérémonie de "promotion" dédiée.
+  - **Nouveaux champs `prix_achat` et `url_marchand`**, disponibles pour toutes les pièces (garde-robe et recrues) — nouvelle section "Achat" dans le formulaire d'ajout/édition. Le prix et le lien vers la fiche produit s'affichent dans le détail de la carte quand ils sont renseignés.
+  - **Écran Mercato** (nouveau bouton dans la barre de contrôles, avec badge indiquant le nombre de recrues) : deux sections — *Recrues* (rôle Recrue potentielle) et *Départs potentiels* (rôle Transfert, réutilise le mécanisme existant, aucun nouveau schéma). Chaque ligne cliquable ouvre directement la fiche pour éditer ou changer le rôle.
+  - **Recrue potentielle exclue de la liste principale par défaut**, comme Retraité aujourd'hui — accessible via le filtre Rôle ou l'écran Mercato, pour ne pas mélanger garde-robe active et pièces convoitées.
+  - **Aucune tension Rôle/Score** générée pour les recrues (comme Transfert/Spectateur/Retraité) — ce n'est pas une pièce mal classée, juste pas encore décidée.
+  - **Intégration Analyse sans code dédié** : le rôle Recrue potentielle apparaît automatiquement comme chip filtrable dans Filtres (peuplé dynamiquement depuis la table `roles`). Cocher ce chip suffit à faire entrer les recrues dans le scope de l'écran Analyse (`getFiltered()`) et donc dans toutes les statistiques — pas de case à cocher spécifique nécessaire.
+
 ## [1.22.0] - 2026-08-06
 
 ### Ajouté
