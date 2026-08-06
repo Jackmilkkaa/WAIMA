@@ -326,6 +326,30 @@
   .tension-title{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .tension-detail{font-size:.72rem;color:var(--text-dim);}
   .tension-score{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.95rem;flex-shrink:0;}
+  .mercato-row{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 10px;border-radius:8px;
+    background:var(--surface-2);border:1px solid var(--border);
+    margin-bottom:6px;cursor:pointer;
+  }
+  .mercato-row:hover{border-color:var(--accent);}
+  .mercato-thumb{
+    width:38px;height:38px;border-radius:7px;flex-shrink:0;overflow:hidden;
+    background:var(--surface);display:flex;align-items:center;justify-content:center;
+    color:var(--text-faint);font-weight:600;font-size:.9rem;
+  }
+  .mercato-thumb img{width:100%;height:100%;object-fit:cover;}
+  .mercato-text{flex:1;min-width:0;}
+  .mercato-title{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mercato-sub{font-size:.72rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mercato-score{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.95rem;flex-shrink:0;}
+  .mercato-link{
+    flex-shrink:0;color:var(--accent);font-size:.85rem;text-decoration:none;
+    border:1px solid var(--border);border-radius:6px;padding:4px 8px;
+  }
+  .mercato-link:hover{border-color:var(--accent);}
+  .mercato-empty{color:var(--text-dim);font-size:.85rem;padding:10px 0;}
+  .mercato-section-hint{font-size:.76rem;color:var(--text-dim);margin:-6px 0 12px;}
   .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:6px;}
   .chart-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0;overflow:hidden;}
   .chart-card.chart-wide{grid-column:1 / -1;}
@@ -551,6 +575,9 @@
       <button class="btn-ghost" id="open-analyse" style="border-radius:8px;padding:9px 14px;font-size:.85rem;cursor:pointer;">
         Analyse
       </button>
+      <button class="btn-ghost" id="open-mercato" style="border-radius:8px;padding:9px 14px;font-size:.85rem;cursor:pointer;">
+        Mercato<span id="mercato-badge" style="display:none;background:var(--accent);color:#1a1408;border-radius:10px;padding:1px 7px;font-size:.7rem;font-weight:700;margin-left:6px;"></span>
+      </button>
     </div>
 
     <div id="items-container"></div>
@@ -775,6 +802,26 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="mercato-overlay">
+  <div class="modal modal-large">
+    <div class="modal-sticky-header">
+      <div>
+        <h2>Mercato</h2>
+        <p class="hint">Recrues à l'étude et départs potentiels — la fenêtre de transfert de ta garde-robe.</p>
+      </div>
+      <button class="modal-close-x" id="mercato-close-x" title="Fermer">✕</button>
+    </div>
+
+    <div class="analyse-section-title">Recrues<span id="mercato-recrues-count" class="chart-detail-sub" style="margin-left:6px;"></span></div>
+    <p class="mercato-section-hint">Pièces ciblées, pas encore achetées. Pour recruter, ouvre la pièce et change son rôle.</p>
+    <div id="mercato-recrues-list"></div>
+
+    <div class="analyse-section-title">Départs potentiels<span id="mercato-departs-count" class="chart-detail-sub" style="margin-left:6px;"></span></div>
+    <p class="mercato-section-hint">Pièces au rôle Transfert — liste de veille, pas un verdict.</p>
+    <div id="mercato-departs-list"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="add-overlay">
   <div class="modal">
     <div class="modal-sticky-header">
@@ -831,6 +878,16 @@
         <label class="filter-label" for="f-marque">Marque</label>
         <select id="f-marque"><option value="">—</option></select>
         <input type="text" id="f-marque-new" placeholder="Nouvelle marque…" style="display:none;margin-top:6px;">
+      </div>
+
+      <div class="form-section-title">Achat</div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-prix">Prix d'achat (€)</label>
+        <input type="number" id="f-prix" min="0" step="0.01" placeholder="Ex. 89.90">
+      </div>
+      <div class="filter-block">
+        <label class="filter-label" for="f-url">Lien vers la fiche produit</label>
+        <input type="url" id="f-url" placeholder="https://…">
       </div>
 
       <div class="form-section-title">Caractéristiques</div>
@@ -1083,7 +1140,7 @@ async function loadReferenceData(){
 
   const chipContainer = $('#role-chips');
   chipContainer.innerHTML = '';
-  activeRoles = new Set(rolesRef.filter(r => r.code !== 'retraite').map(r => r.code));
+  activeRoles = new Set(defaultVisibleRoles());
   rolesRef.forEach(r => {
     const chip = document.createElement('button');
     chip.className = 'chip' + (activeRoles.has(r.code) ? ' active' : '');
@@ -1143,6 +1200,7 @@ async function loadItems(){
   populateSaisonChips();
   populateFormReferenceData();
   render();
+  renderMercato();
 }
 
 function populateMarqueFilter(){
@@ -1302,7 +1360,7 @@ function pill(refObj, value){
 // capitaine/titulaire : plancher seul (signalé si en dessous).
 // remplacant : fenêtre 6.5-7.5 (signalé en dessous ET au-dessus).
 // rotation : plafond d'opportunité seul (signalé si au-dessus, potentiel sous-exploité).
-// spectateur / transfert / retraite : rôles de contexte, jamais de signal.
+// spectateur / transfert / retraite / recrue potentielle : rôles de contexte, jamais de signal.
 function getTension(it){
   if(it.score == null) return null;
   const role = it.role_code;
@@ -1370,6 +1428,8 @@ function render(){
         <div class="detail-row"><strong>Matière :</strong> ${escapeHtml(it.matiere || '—')}</div>
         <div class="detail-row"><strong>Texture :</strong> ${escapeHtml(it.texture || '—')}</div>
         <div class="detail-row"><strong>Saison :</strong> ${escapeHtml(saisonTxt || '—')}</div>
+        ${it.prix_achat != null ? `<div class="detail-row"><strong>Prix d'achat :</strong> ${Number(it.prix_achat).toFixed(2)} €</div>` : ''}
+        ${it.url_marchand ? `<div class="detail-row"><strong>Lien :</strong> <a href="${escapeHtml(it.url_marchand)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Voir la fiche produit ↗</a></div>` : ''}
         ${it.adn_sec ? `<div class="detail-row" title="${escapeHtml(adnTooltip(it.adn_sec))}"><strong>ADN secondaire :</strong> ${escapeHtml(adnLabel(it.adn_sec))} (${it.intensite_secondaire})</div>` : ''}
         ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
         <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
@@ -1422,7 +1482,7 @@ $('#open-filters').addEventListener('click', () => $('#filter-overlay').classLis
 $('#filters-close-x').addEventListener('click', () => $('#filter-overlay').classList.remove('open'));
 $('#filters-reset').addEventListener('click', () => {
   activeAdn.clear(); activeTexture.clear(); activeSaison.clear();
-  activeRoles = new Set(rolesRef.filter(r => r.code !== 'retraite').map(r => r.code));
+  activeRoles = new Set(defaultVisibleRoles());
   Object.values(activeEchelle).forEach(set => set.clear());
   $('#category-filter').value = '';
   $('#sous-categorie-filter').value = '';
@@ -1433,10 +1493,67 @@ $('#filters-reset').addEventListener('click', () => {
   render(); updateFilterBadge();
 });
 
+// Rôles visibles par défaut dans la liste principale : on masque Retraité (sorti du
+// système actif) et Recrue potentielle (pas encore possédée — feature Mercato), pour
+// ne pas mélanger le quotidien avec l'historique ou la wishlist. Les deux restent
+// accessibles via le filtre Rôle ou l'écran Mercato.
+function defaultVisibleRoles(){
+  return rolesRef.filter(r => r.code !== 'retraite' && r.code !== 'recrue_potentielle').map(r => r.code);
+}
+
 function isDefaultRoles(){
-  const nonRetraite = rolesRef.filter(r => r.code !== 'retraite').map(r => r.code);
+  const nonRetraite = defaultVisibleRoles();
   return activeRoles.size === nonRetraite.length && nonRetraite.every(c => activeRoles.has(c));
 }
+
+// ---------- Écran Mercato (recrues + départs potentiels) ----------
+function mercatoCardHtml(it, { showScore = true } = {}){
+  const catLabel = it.categorie ? (it.categorie.sous_categorie ? `${it.categorie.categorie} · ${it.categorie.sous_categorie}` : it.categorie.categorie) : '—';
+  const priceTxt = it.prix_achat != null ? ` · ${Number(it.prix_achat).toFixed(2)} €` : '';
+  return `
+    <div class="mercato-row" data-id="${escapeHtml(it.id)}">
+      <div class="mercato-thumb">${it.photo_url ? `<img src="${escapeHtml(it.photo_url)}" alt="">` : escapeHtml((it.libelle||'?').charAt(0))}</div>
+      <div class="mercato-text">
+        <div class="mercato-title">${escapeHtml(it.libelle)}</div>
+        <div class="mercato-sub">${escapeHtml(it.marque?.nom || '—')} · ${escapeHtml(catLabel)}${priceTxt}</div>
+      </div>
+      ${showScore ? `<div class="mercato-score" style="${scoreBand(it.score) ? `color:${scoreBand(it.score).couleur};` : ''}">${it.score != null ? Number(it.score).toFixed(1) : '—'}</div>` : ''}
+      ${it.url_marchand ? `<a class="mercato-link" href="${escapeHtml(it.url_marchand)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Voir la fiche produit">↗</a>` : ''}
+    </div>`;
+}
+
+function renderMercato(){
+  const recrues = allItems.filter(it => it.role_code === 'recrue_potentielle');
+  const departs = allItems.filter(it => it.role_code === 'transfert');
+
+  $('#mercato-recrues-count').textContent = recrues.length ? `(${recrues.length})` : '';
+  $('#mercato-departs-count').textContent = departs.length ? `(${departs.length})` : '';
+  $('#mercato-badge').style.display = recrues.length ? '' : 'none';
+  $('#mercato-badge').textContent = recrues.length || '';
+
+  const recruesList = $('#mercato-recrues-list');
+  recruesList.innerHTML = recrues.length
+    ? recrues.map(it => mercatoCardHtml(it)).join('')
+    : `<div class="mercato-empty">Aucune recrue à l'étude pour l'instant.</div>`;
+
+  const departsList = $('#mercato-departs-list');
+  departsList.innerHTML = departs.length
+    ? departs.map(it => mercatoCardHtml(it)).join('')
+    : `<div class="mercato-empty">Aucune pièce en veille de sortie.</div>`;
+
+  $$('#mercato-recrues-list .mercato-row, #mercato-departs-list .mercato-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const it = allItems.find(i => i.id === row.dataset.id);
+      if(it){ $('#mercato-overlay').classList.remove('open'); openEditModal(it); }
+    });
+  });
+}
+
+$('#open-mercato').addEventListener('click', () => {
+  renderMercato();
+  $('#mercato-overlay').classList.add('open');
+});
+$('#mercato-close-x').addEventListener('click', () => $('#mercato-overlay').classList.remove('open'));
 
 // ---------- Écran Analyse (tensions Rôle/Score + statistiques) ----------
 let analyseCharts = {};
@@ -2016,6 +2133,8 @@ function openEditModal(it){
   $('#f-couleur').value = it.couleur_principale || '';
   $('#f-matiere').value = it.matiere || '';
   $('#f-texture').value = it.texture || '';
+  $('#f-prix').value = it.prix_achat ?? '';
+  $('#f-url').value = it.url_marchand || '';
 
   const knownSaisons = ['4 saisons','Chaud','Froid','Mi-saison'];
   const itemSaisons = it.saison || [];
@@ -2104,6 +2223,8 @@ $('#item-form').addEventListener('submit', async (e) => {
     couleur_principale: $('#f-couleur').value.trim() || null,
     matiere: $('#f-matiere').value.trim() || null,
     texture: $('#f-texture').value.trim() || null,
+    prix_achat: $('#f-prix').value ? parseFloat($('#f-prix').value) : null,
+    url_marchand: $('#f-url').value.trim() || null,
     formalite: $('#f-formalite').value ? parseInt($('#f-formalite').value) : null,
     saison: saison.length ? saison : null,
     frequence: $('#f-frequence').value ? parseInt($('#f-frequence').value) : null,
