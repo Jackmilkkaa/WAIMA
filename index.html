@@ -308,6 +308,28 @@
     text-transform:none;letter-spacing:normal;flex-shrink:0;
   }
   .chart-back-btn:hover{border-color:var(--accent);}
+  .chart-expand-btn{
+    background:none;border:1px solid var(--border);border-radius:6px;
+    color:var(--text-dim);font-size:.75rem;padding:2px 7px;cursor:pointer;
+    text-transform:none;letter-spacing:normal;flex-shrink:0;line-height:1.3;
+  }
+  .chart-expand-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .chart-card-hidden{display:none;}
+  .chart-card-expanded{grid-column:1 / -1;}
+  .chart-card-expanded canvas{max-height:400px;}
+  .chart-detail-list{margin-top:12px;display:none;border-top:1px solid var(--border);padding-top:10px;}
+  .chart-detail-list.open{display:block;}
+  .chart-detail-hint{font-size:.72rem;color:var(--text-dim);margin:0 0 8px;}
+  .chart-detail-row{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 9px;border-radius:8px;
+    background:var(--surface);border:1px solid var(--border);
+    margin-bottom:6px;cursor:pointer;
+  }
+  .chart-detail-row:hover{border-color:var(--accent);}
+  .chart-detail-title{flex:1;min-width:0;font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .chart-detail-sub{font-size:.7rem;color:var(--text-dim);flex-shrink:0;}
+  .chart-detail-score{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.85rem;flex-shrink:0;}
   @media (max-width:640px){ .chart-grid{grid-template-columns:1fr;} }
   .analyse-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px;border-bottom:1px solid var(--border);padding-bottom:10px;}
   .analyse-tab{
@@ -611,49 +633,96 @@
 
     <div class="analyse-section-title">Statistiques</div>
     <div class="analyse-tabs" id="analyse-tabs">
-      <button class="analyse-tab active" data-tab="ensemble">Vue d'ensemble</button>
-      <button class="analyse-tab" data-tab="categories">Catégories</button>
-      <button class="analyse-tab" data-tab="usage">Usage &amp; valeur</button>
-      <button class="analyse-tab" data-tab="style">Style &amp; saison</button>
+      <button class="analyse-tab active" data-tab="identite">Identité</button>
+      <button class="analyse-tab" data-tab="composition">Composition</button>
+      <button class="analyse-tab" data-tab="usage">Usage</button>
     </div>
 
-    <div class="analyse-tabpanel active" data-tabpanel="ensemble">
+    <div class="analyse-tabpanel active" data-tabpanel="identite">
       <div class="chart-grid">
-        <div class="chart-card"><h3>Répartition des rôles</h3><canvas id="chart-roles"></canvas></div>
-        <div class="chart-card"><h3>Distribution des scores</h3><canvas id="chart-scores"></canvas></div>
-        <div class="chart-card"><h3>Couverture formalité</h3><canvas id="chart-formalite"></canvas></div>
-        <div class="chart-card"><h3>Répartition Qualité</h3><canvas id="chart-qualite"></canvas></div>
+        <div class="chart-card" data-card="roles">
+          <h3><span>Répartition des rôles</span><button class="chart-expand-btn" data-card="roles" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-roles"></canvas>
+          <div class="chart-detail-list" id="detail-roles"></div>
+        </div>
+        <div class="chart-card" data-card="scores">
+          <h3><span>Distribution des scores</span><button class="chart-expand-btn" data-card="scores" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-scores"></canvas>
+          <div class="chart-detail-list" id="detail-scores"></div>
+        </div>
+        <div class="chart-card" data-card="adn-dom">
+          <h3><span>ADN dominant</span><button class="chart-expand-btn" data-card="adn-dom" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-adn-dom"></canvas>
+          <div class="chart-detail-list" id="detail-adn-dom"></div>
+        </div>
+        <div class="chart-card" data-card="adn-sec">
+          <h3><span>ADN secondaire</span><button class="chart-expand-btn" data-card="adn-sec" title="Plein écran">⤢</button></h3>
+          <p class="chart-subtitle">Pièces ayant un registre secondaire renseigné.</p>
+          <canvas id="chart-adn-sec"></canvas>
+          <div class="chart-detail-list" id="detail-adn-sec"></div>
+        </div>
       </div>
     </div>
 
-    <div class="analyse-tabpanel" data-tabpanel="categories">
+    <div class="analyse-tabpanel" data-tabpanel="composition">
       <div class="chart-grid">
-        <div class="chart-card chart-wide">
-          <h3><span id="chart-categorie-title">Répartition par catégorie</span><button class="chart-back-btn" id="chart-categorie-back" style="display:none;">← Toutes les catégories</button></h3>
-          <p class="chart-subtitle">Clique une barre pour voir le détail par sous-catégorie.</p>
+        <div class="chart-card chart-wide" data-card="categorie">
+          <h3><span id="chart-categorie-title">Répartition par catégorie</span>
+            <span style="display:flex;gap:6px;">
+              <button class="chart-back-btn" id="chart-categorie-back" style="display:none;">← Toutes les catégories</button>
+              <button class="chart-expand-btn" data-card="categorie" title="Plein écran">⤢</button>
+            </span>
+          </h3>
+          <p class="chart-subtitle">Clique une barre pour voir le détail par sous-catégorie, puis les pièces qui la composent.</p>
           <canvas id="chart-categorie"></canvas>
+          <div class="chart-detail-list" id="detail-categorie"></div>
+        </div>
+        <div class="chart-card" data-card="couleurs">
+          <h3><span>Couleurs dominantes</span><button class="chart-expand-btn" data-card="couleurs" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-couleurs"></canvas>
+          <div class="chart-detail-list" id="detail-couleurs"></div>
+        </div>
+        <div class="chart-card" data-card="qualite">
+          <h3><span>Répartition Qualité</span><button class="chart-expand-btn" data-card="qualite" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-qualite"></canvas>
+          <div class="chart-detail-list" id="detail-qualite"></div>
+        </div>
+        <div class="chart-card" data-card="premium">
+          <h3><span>Premium perçu</span><button class="chart-expand-btn" data-card="premium" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-premium"></canvas>
+          <div class="chart-detail-list" id="detail-premium"></div>
+        </div>
+        <div class="chart-card" data-card="formalite">
+          <h3><span>Couverture formalité</span><button class="chart-expand-btn" data-card="formalite" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-formalite"></canvas>
+          <div class="chart-detail-list" id="detail-formalite"></div>
         </div>
       </div>
     </div>
 
     <div class="analyse-tabpanel" data-tabpanel="usage">
       <div class="chart-grid">
-        <div class="chart-card"><h3>Fréquence de portage</h3><canvas id="chart-frequence"></canvas></div>
-        <div class="chart-card"><h3>Attachement</h3><canvas id="chart-attachement"></canvas></div>
-        <div class="chart-card"><h3>Polyvalence</h3><canvas id="chart-polyvalence"></canvas></div>
-        <div class="chart-card"><h3>Premium perçu</h3><canvas id="chart-premium"></canvas></div>
-      </div>
-    </div>
-
-    <div class="analyse-tabpanel" data-tabpanel="style">
-      <div class="chart-grid">
-        <div class="chart-card chart-wide">
-          <h3>Équilibre ADN</h3>
-          <p class="chart-subtitle">Dominant + secondaire cumulés (une pièce compte pour ses deux registres).</p>
-          <canvas id="chart-adn"></canvas>
+        <div class="chart-card" data-card="frequence">
+          <h3><span>Fréquence de portage</span><button class="chart-expand-btn" data-card="frequence" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-frequence"></canvas>
+          <div class="chart-detail-list" id="detail-frequence"></div>
         </div>
-        <div class="chart-card"><h3>Couleurs dominantes</h3><canvas id="chart-couleurs"></canvas></div>
-        <div class="chart-card"><h3>Saison</h3><canvas id="chart-saison"></canvas></div>
+        <div class="chart-card" data-card="attachement">
+          <h3><span>Attachement</span><button class="chart-expand-btn" data-card="attachement" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-attachement"></canvas>
+          <div class="chart-detail-list" id="detail-attachement"></div>
+        </div>
+        <div class="chart-card" data-card="polyvalence">
+          <h3><span>Polyvalence</span><button class="chart-expand-btn" data-card="polyvalence" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-polyvalence"></canvas>
+          <div class="chart-detail-list" id="detail-polyvalence"></div>
+        </div>
+        <div class="chart-card" data-card="saison">
+          <h3><span>Saison</span><button class="chart-expand-btn" data-card="saison" title="Plein écran">⤢</button></h3>
+          <p class="chart-subtitle">Une pièce multi-saison compte dans chaque saison qu'elle couvre.</p>
+          <canvas id="chart-saison"></canvas>
+          <div class="chart-detail-list" id="detail-saison"></div>
+        </div>
       </div>
     </div>
 
@@ -1366,185 +1435,204 @@ function buildTensionList(scope){
   });
 }
 
-function countBy(items, keyFn){
+function groupBy(items, keyFn){
   const map = new Map();
   items.forEach(it => {
     const k = keyFn(it);
     if(k === null || k === undefined) return;
-    map.set(k, (map.get(k) || 0) + 1);
+    if(!map.has(k)) map.set(k, []);
+    map.get(k).push(it);
   });
   return map;
 }
 
 const barTicksStyle = { color: '#a89f8c', font: { size: 9 } };
 const barGridStyle = { color: '#3a3427' };
-function horizontalBarOptions(){
-  return { plugins: { legend: { display: false } },
-    scales: { x: { ticks: barTicksStyle, grid: { display: false } }, y: { ticks: { color: '#a89f8c' }, grid: barGridStyle } } };
+
+// ---------- Détail (liste de pièces) et plein écran par carte ----------
+let expandedCard = null;
+
+function renderChartDetailList(cardKey, label, items){
+  const container = document.getElementById('detail-' + cardKey);
+  if(!container) return;
+  if(!items || items.length === 0){
+    container.innerHTML = `<div class="chart-detail-hint">Aucune pièce pour « ${escapeHtml(label)} ».</div>`;
+    container.classList.add('open');
+    return;
+  }
+  const sorted = [...items].sort((a,b) => Number(b.score||0) - Number(a.score||0));
+  container.innerHTML = `
+    <p class="chart-detail-hint">${sorted.length} pièce(s) — ${escapeHtml(label)}</p>
+    ${sorted.map(it => `
+      <div class="chart-detail-row" data-id="${escapeHtml(it.id)}">
+        <div class="chart-detail-title">${escapeHtml(it.libelle)}</div>
+        <div class="chart-detail-sub">${escapeHtml(it.role?.libelle || it.role_code || '—')}</div>
+        <div class="chart-detail-score" style="${scoreBand(it.score) ? `color:${scoreBand(it.score).couleur};` : ''}">${it.score != null ? Number(it.score).toFixed(1) : '—'}</div>
+      </div>
+    `).join('')}
+  `;
+  container.classList.add('open');
+  container.querySelectorAll('.chart-detail-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const it = allItems.find(i => i.id === row.dataset.id);
+      if(it) openEditModal(it);
+    });
+  });
 }
-function verticalBarOptions(rotate){
-  return { plugins: { legend: { display: false } },
-    scales: {
-      x: { ticks: { color: '#a89f8c', font: { size: 9 }, autoSkip: false, maxRotation: rotate ? 45 : 0, minRotation: rotate ? 45 : 0 }, grid: { display: false } },
-      y: { ticks: barTicksStyle, grid: barGridStyle }
-    } };
+
+function clearChartDetailList(cardKey){
+  const container = document.getElementById('detail-' + cardKey);
+  if(!container) return;
+  container.classList.remove('open');
+  container.innerHTML = '';
+}
+
+function setExpandedCard(cardKey){
+  expandedCard = cardKey;
+  $$('.chart-card[data-card]').forEach(card => {
+    const key = card.dataset.card;
+    const panel = card.closest('.analyse-tabpanel');
+    if(!panel || !panel.classList.contains('active')) return;
+    const isTarget = key === expandedCard;
+    card.classList.toggle('chart-card-expanded', isTarget);
+    card.classList.toggle('chart-card-hidden', expandedCard !== null && !isTarget);
+  });
+  Object.entries(analyseCharts).forEach(([key, chart]) => { if(chart) chart.resize(); });
+  $$('.chart-expand-btn').forEach(btn => {
+    btn.textContent = (btn.dataset.card === expandedCard) ? '⤡' : '⤢';
+    btn.title = (btn.dataset.card === expandedCard) ? 'Réduire' : 'Plein écran';
+  });
+}
+
+function toggleExpandedCard(cardKey){
+  setExpandedCard(expandedCard === cardKey ? null : cardKey);
+}
+
+$$('.chart-expand-btn').forEach(btn => {
+  btn.addEventListener('click', () => toggleExpandedCard(btn.dataset.card));
+});
+
+// ---------- Construction générique d'un graphique cliquable ----------
+// entries: [{label, color, items}]
+function renderBarChart(cardKey, canvasSelector, entries, opts = {}){
+  const { horizontal = false, rotateLabels = false, isPie = false, onSliceClick = null } = opts;
+  if(analyseCharts[cardKey]){ analyseCharts[cardKey].destroy(); analyseCharts[cardKey] = null; }
+  clearChartDetailList(cardKey);
+
+  const labels = entries.map(e => e.label);
+  const data = entries.map(e => e.items.length);
+  const colors = entries.map(e => e.color);
+
+  const handleClick = (evt, elements) => {
+    if(!elements.length) return;
+    const idx = elements[0].index;
+    const entry = entries[idx];
+    if(onSliceClick){
+      onSliceClick(entry, idx);
+    } else {
+      setExpandedCard(cardKey);
+      renderChartDetailList(cardKey, entry.label, entry.items);
+    }
+  };
+
+  analyseCharts[cardKey] = new Chart($(canvasSelector), {
+    type: isPie ? 'pie' : 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors }] },
+    options: {
+      indexAxis: (!isPie && horizontal) ? 'y' : 'x',
+      maintainAspectRatio: false,
+      plugins: {
+        legend: isPie ? { position: 'bottom', labels: { color: '#a89f8c', font: { size: 10 } } } : { display: false }
+      },
+      scales: isPie ? undefined : {
+        x: horizontal
+          ? { ticks: barTicksStyle, grid: { display: false } }
+          : { ticks: { color: '#a89f8c', font: { size: 9 }, autoSkip: false, maxRotation: rotateLabels ? 45 : 0, minRotation: rotateLabels ? 45 : 0 }, grid: { display: false } },
+        y: horizontal
+          ? { ticks: { color: '#a89f8c' }, grid: barGridStyle }
+          : { ticks: barTicksStyle, grid: barGridStyle }
+      },
+      onClick: handleClick,
+      onHover: (evt, elements) => { evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; }
+    }
+  });
 }
 
 let currentAnalyseScope = [];
-let currentAnalyseTab = 'ensemble';
+let currentAnalyseTab = 'identite';
 let categorieDrillLevel = null; // null = vue par catégorie, sinon nom de la catégorie sélectionnée
 
+// ---------- Onglet Identité ----------
 function buildChartRoles(scope){
-  const counts = countBy(scope, it => it.role_code);
-  const labels = rolesRef.map(r => r.libelle);
-  const data = rolesRef.map(r => counts.get(r.code) || 0);
-  const colors = rolesRef.map(r => r.couleur);
-  analyseCharts.roles = new Chart($('#chart-roles'), {
-    type: 'pie',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: { plugins: { legend: { position: 'bottom', labels: { color: '#a89f8c', font: { size: 10 } } } } }
-  });
+  const grouped = groupBy(scope, it => it.role_code);
+  const entries = rolesRef.map(r => ({ label: r.libelle, color: r.couleur, items: grouped.get(r.code) || [] }));
+  renderBarChart('roles', '#chart-roles', entries, { isPie: true });
 }
 
 function buildChartScores(activeItems){
   const bands = [...scoreEchelle].sort((a,b) => a.borne_min - b.borne_min);
-  const labels = bands.map(b => b.libelle);
-  const data = bands.map(b => activeItems.filter(it => it.score != null && it.score >= b.borne_min && it.score < b.borne_max).length);
-  const colors = bands.map(b => b.couleur);
-  analyseCharts.scores = new Chart($('#chart-scores'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: { indexAxis: 'y', ...horizontalBarOptions() }
-  });
+  const entries = bands.map(b => ({
+    label: b.libelle, color: b.couleur,
+    items: activeItems.filter(it => it.score != null && it.score >= b.borne_min && it.score < b.borne_max)
+  }));
+  renderBarChart('scores', '#chart-scores', entries, { horizontal: true });
 }
 
-function buildChartFormalite(activeItems){
-  const counts = countBy(activeItems, it => it.formalite);
-  const bands = (echelleRef.formalite || []);
-  const labels = bands.map(b => b.libelle);
-  const data = bands.map(b => counts.get(b.valeur) || 0);
-  const colors = bands.map(b => b.couleur);
-  analyseCharts.formalite = new Chart($('#chart-formalite'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: verticalBarOptions(false)
-  });
+function buildChartAdnDominant(activeItems){
+  const grouped = groupBy(activeItems, it => it.adn_dominant_code);
+  const entries = adnRef.map(a => ({ label: adnLabel(a), color: a.couleur, items: grouped.get(a.code) || [] }));
+  renderBarChart('adn-dom', '#chart-adn-dom', entries, {});
 }
 
-function buildChartQualite(activeItems){
-  const counts = countBy(activeItems, it => it.qualite_percue);
-  const bands = (echelleRef.qualite || []);
-  const labels = bands.map(b => b.libelle);
-  const data = bands.map(b => counts.get(b.valeur) || 0);
-  const colors = bands.map(b => b.couleur);
-  analyseCharts.qualite = new Chart($('#chart-qualite'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: verticalBarOptions(false)
-  });
+function buildChartAdnSecondaire(activeItems){
+  const grouped = groupBy(activeItems, it => it.adn_secondaire_code);
+  const entries = adnRef.map(a => ({ label: adnLabel(a), color: a.couleur, items: grouped.get(a.code) || [] }));
+  renderBarChart('adn-sec', '#chart-adn-sec', entries, {});
 }
 
-// Graphique échelle générique (fréquence, attachement, polyvalence, premium)
-function buildEchelleChart(canvasId, chartKey, activeItems, itemField, echelleKey){
-  const counts = countBy(activeItems, it => it[itemField]);
-  const bands = (echelleRef[echelleKey] || []);
-  const labels = bands.map(b => b.libelle);
-  const data = bands.map(b => counts.get(b.valeur) || 0);
-  const colors = bands.map(b => b.couleur);
-  analyseCharts[chartKey] = new Chart($(canvasId), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: verticalBarOptions(false)
-  });
-}
-
+// ---------- Onglet Composition ----------
 function buildChartCouleurs(activeItems){
-  const counts = countBy(activeItems, it => it.famille_couleur);
-  const sorted = [...counts.entries()].sort((a,b) => b[1]-a[1]);
-  const labels = sorted.map(([k]) => k);
-  const data = sorted.map(([,v]) => v);
-  const colors = sorted.map(([k]) => (famillesCouleurRef.find(f => f.nom === k) || {}).couleur || '#c17f42');
-  analyseCharts.couleurs = new Chart($('#chart-couleurs'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: verticalBarOptions(true)
-  });
+  const grouped = groupBy(activeItems, it => it.famille_couleur);
+  const sorted = [...grouped.entries()].sort((a,b) => b[1].length - a[1].length);
+  const entries = sorted.map(([k, items]) => ({ label: k, color: (famillesCouleurRef.find(f => f.nom === k) || {}).couleur || '#c17f42', items }));
+  renderBarChart('couleurs', '#chart-couleurs', entries, { rotateLabels: true });
 }
 
-function buildChartSaison(activeItems){
-  const counts = new Map();
-  activeItems.forEach(it => (it.saison || []).forEach(s => counts.set(s, (counts.get(s) || 0) + 1)));
-  const sorted = [...counts.entries()].sort((a,b) => b[1]-a[1]);
-  const labels = sorted.map(([k]) => k);
-  const data = sorted.map(([,v]) => v);
-  analyseCharts.saison = new Chart($('#chart-saison'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: '#c17f42' }] },
-    options: verticalBarOptions(true)
-  });
+function buildEchelleChart(cardKey, canvasSelector, activeItems, itemField, echelleKey){
+  const grouped = groupBy(activeItems, it => it[itemField]);
+  const bands = (echelleRef[echelleKey] || []);
+  const entries = bands.map(b => ({ label: b.libelle, color: b.couleur, items: grouped.get(b.valeur) || [] }));
+  renderBarChart(cardKey, canvasSelector, entries, {});
 }
 
-// ADN : dominant + secondaire cumulés (chaque pièce alimente les deux registres qu'elle porte)
-function buildChartAdn(activeItems){
-  const counts = new Map();
-  adnRef.forEach(a => counts.set(a.code, 0));
-  activeItems.forEach(it => {
-    if(it.adn_dominant_code) counts.set(it.adn_dominant_code, (counts.get(it.adn_dominant_code) || 0) + 1);
-    if(it.adn_secondaire_code) counts.set(it.adn_secondaire_code, (counts.get(it.adn_secondaire_code) || 0) + 1);
-  });
-  const labels = adnRef.map(a => adnLabel(a));
-  const data = adnRef.map(a => counts.get(a.code) || 0);
-  const colors = adnRef.map(a => a.couleur);
-  analyseCharts.adn = new Chart($('#chart-adn'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: verticalBarOptions(false)
-  });
-}
-
-// Catégories, avec drill-down au clic vers les sous-catégories
+// Catégories, avec drill-down au clic vers les sous-catégories, puis liste de pièces au niveau feuille
 function buildChartCategorie(activeItems){
-  if(analyseCharts.categorie){ analyseCharts.categorie.destroy(); analyseCharts.categorie = null; }
-
   const backBtn = $('#chart-categorie-back');
   const title = $('#chart-categorie-title');
 
-  let labels, data, onClickLabel;
   if(categorieDrillLevel === null){
-    const counts = countBy(activeItems, it => it.categorie ? it.categorie.categorie : null);
-    const sorted = [...counts.entries()].sort((a,b) => b[1]-a[1]);
-    labels = sorted.map(([k]) => k);
-    data = sorted.map(([,v]) => v);
+    const grouped = groupBy(activeItems, it => it.categorie ? it.categorie.categorie : null);
+    const sorted = [...grouped.entries()].sort((a,b) => b[1].length - a[1].length);
+    const entries = sorted.map(([k, items]) => ({ label: k, color: '#c17f42', items }));
     title.textContent = 'Répartition par catégorie';
     backBtn.style.display = 'none';
-    onClickLabel = (label) => {
-      categorieDrillLevel = label;
-      buildChartCategorie(currentAnalyseScope.filter(it => it.role_code !== 'retraite'));
-    };
+    renderBarChart('categorie', '#chart-categorie', entries, {
+      rotateLabels: entries.length > 6,
+      onSliceClick: (entry) => {
+        categorieDrillLevel = entry.label;
+        buildChartCategorie(currentAnalyseScope.filter(it => it.role_code !== 'retraite'));
+      }
+    });
   } else {
     const scoped = activeItems.filter(it => it.categorie && it.categorie.categorie === categorieDrillLevel);
-    const counts = countBy(scoped, it => it.categorie.sous_categorie || 'Non précisé');
-    const sorted = [...counts.entries()].sort((a,b) => b[1]-a[1]);
-    labels = sorted.map(([k]) => k);
-    data = sorted.map(([,v]) => v);
+    const grouped = groupBy(scoped, it => it.categorie.sous_categorie || 'Non précisé');
+    const sorted = [...grouped.entries()].sort((a,b) => b[1].length - a[1].length);
+    const entries = sorted.map(([k, items]) => ({ label: k, color: '#c17f42', items }));
     title.textContent = `Sous-catégories — ${categorieDrillLevel}`;
     backBtn.style.display = '';
-    onClickLabel = null;
+    // Au niveau feuille, un clic affiche directement la liste des pièces (comportement par défaut de renderBarChart)
+    renderBarChart('categorie', '#chart-categorie', entries, { rotateLabels: entries.length > 6 });
   }
-
-  analyseCharts.categorie = new Chart($('#chart-categorie'), {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: '#c17f42' }] },
-    options: {
-      ...verticalBarOptions(labels.length > 6),
-      onClick: onClickLabel ? (evt, elements) => {
-        if(!elements.length) return;
-        const idx = elements[0].index;
-        onClickLabel(labels[idx]);
-      } : undefined,
-      onHover: onClickLabel ? (evt, elements) => { evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; } : undefined
-    }
-  });
 }
 
 $('#chart-categorie-back').addEventListener('click', () => {
@@ -1552,26 +1640,37 @@ $('#chart-categorie-back').addEventListener('click', () => {
   buildChartCategorie(currentAnalyseScope.filter(it => it.role_code !== 'retraite'));
 });
 
+// ---------- Onglet Usage ----------
+function buildChartSaison(activeItems){
+  const grouped = new Map();
+  activeItems.forEach(it => (it.saison || []).forEach(s => {
+    if(!grouped.has(s)) grouped.set(s, []);
+    grouped.get(s).push(it);
+  }));
+  const sorted = [...grouped.entries()].sort((a,b) => b[1].length - a[1].length);
+  const entries = sorted.map(([k, items]) => ({ label: k, color: '#c17f42', items }));
+  renderBarChart('saison', '#chart-saison', entries, { rotateLabels: true });
+}
+
 const TAB_BUILDERS = {
-  ensemble: (scope, activeItems) => {
+  identite: (scope, activeItems) => {
     buildChartRoles(scope);
     buildChartScores(activeItems);
-    buildChartFormalite(activeItems);
-    buildChartQualite(activeItems);
+    buildChartAdnDominant(activeItems);
+    buildChartAdnSecondaire(activeItems);
   },
-  categories: (scope, activeItems) => {
+  composition: (scope, activeItems) => {
     categorieDrillLevel = null;
     buildChartCategorie(activeItems);
+    buildChartCouleurs(activeItems);
+    buildEchelleChart('qualite', '#chart-qualite', activeItems, 'qualite_percue', 'qualite');
+    buildEchelleChart('premium', '#chart-premium', activeItems, 'premium_percu', 'premium');
+    buildEchelleChart('formalite', '#chart-formalite', activeItems, 'formalite', 'formalite');
   },
   usage: (scope, activeItems) => {
-    buildEchelleChart('#chart-frequence', 'frequence', activeItems, 'frequence', 'frequence');
-    buildEchelleChart('#chart-attachement', 'attachement', activeItems, 'attachement', 'attachement');
-    buildEchelleChart('#chart-polyvalence', 'polyvalence', activeItems, 'polyvalence', 'polyvalence');
-    buildEchelleChart('#chart-premium', 'premium', activeItems, 'premium_percu', 'premium');
-  },
-  style: (scope, activeItems) => {
-    buildChartAdn(activeItems);
-    buildChartCouleurs(activeItems);
+    buildEchelleChart('frequence', '#chart-frequence', activeItems, 'frequence', 'frequence');
+    buildEchelleChart('attachement', '#chart-attachement', activeItems, 'attachement', 'attachement');
+    buildEchelleChart('polyvalence', '#chart-polyvalence', activeItems, 'polyvalence', 'polyvalence');
     buildChartSaison(activeItems);
   }
 };
@@ -1579,8 +1678,10 @@ const TAB_BUILDERS = {
 function renderAnalyseTab(tabName){
   destroyAnalyseCharts();
   currentAnalyseTab = tabName;
+  expandedCard = null;
   $$('.analyse-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
   $$('.analyse-tabpanel').forEach(p => p.classList.toggle('active', p.dataset.tabpanel === tabName));
+  $$('.chart-card[data-card]').forEach(card => { card.classList.remove('chart-card-expanded', 'chart-card-hidden'); });
   const activeItems = currentAnalyseScope.filter(it => it.role_code !== 'retraite');
   TAB_BUILDERS[tabName](currentAnalyseScope, activeItems);
 }
@@ -1600,6 +1701,7 @@ function openAnalyse(){
 
 $('#open-analyse').addEventListener('click', openAnalyse);
 $('#analyse-close').addEventListener('click', () => $('#analyse-overlay').classList.remove('open'));
+
 
 function updateFilterBadge(){
   let count = 0;
