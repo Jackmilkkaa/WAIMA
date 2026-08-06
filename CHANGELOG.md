@@ -4,6 +4,19 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.20.0] - 2026-08-06
+
+### Modifié
+- **Réorganisation complète de l'écran Analyse (statistiques)** : les 4 onglets de la v1.19.0 sont remplacés par 3 onglets suivant une logique éditoriale (pourquoi ça compte → de quoi c'est fait → comment ça sert) :
+  - **Identité** : Rôles, Scores, ADN dominant, ADN secondaire (désormais séparés au lieu d'être cumulés dans un seul graphique).
+  - **Composition** : Catégorie/sous-catégorie (drill-down), Couleurs, Qualité, Premium perçu, Formalité.
+  - **Usage** : Fréquence de portage, Attachement, Polyvalence, Saison.
+- **Plein écran par carte** : chaque graphique a un bouton d'agrandissement (⤢/⤡) qui le passe en pleine largeur et masque temporairement les autres cartes du même onglet.
+- **Détail cliquable universel** : cliquer sur une part de camembert ou une barre affiche, sous le graphique (qui passe automatiquement en plein écran), la liste des pièces qui la composent — chaque ligne cliquable ouvre directement la fiche de la pièce concernée. S'applique à tous les graphiques, y compris Rôles, Scores et les sous-catégories issues du drill-down Catégorie.
+
+### Note technique
+- Nouveau moteur générique `renderBarChart(cardKey, canvas, entries, opts)` qui construit indifféremment camemberts et barres à partir d'`entries` typées `{label, color, items}` — remplace les fonctions de graphique dupliquées de la v1.19.0. `groupBy` remplace `countBy` : il retourne désormais les pièces elles-mêmes (pas seulement leur nombre), nécessaire pour la liste de détail au clic.
+
 ## [1.19.0] - 2026-08-06
 
 ### Ajouté
