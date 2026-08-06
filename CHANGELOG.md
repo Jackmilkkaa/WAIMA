@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.21.1] - 2026-08-06
+
+### Corrigé
+- **Bug de resize persistant** : la v1.21.0 tentait de corriger le blocage de taille via `chart.resize()` différé, mais le problème persistait — le canvas gardait une taille interne héritée de l'état agrandi et débordait de sa carte, décalant toute la page horizontalement. Cause réelle : `chart.resize()` réutilise des mesures internes de l'instance Chart.js existante, qui peuvent rester incohérentes après un changement de `grid-column`/`display`.
+  Remplacé par une reconstruction complète du graphique (destruction + nouvelle instance `Chart`) à chaque agrandissement ou réduction de carte : une instance neuve mesure toujours son conteneur à zéro, ce qui élimine la classe de bug entière. Les paramètres de construction de chaque graphique sont mis en cache pour permettre cette reconstruction sans perdre les données ni la liste de détail ouverte.
+
 ## [1.21.0] - 2026-08-06
 
 ### Ajouté
