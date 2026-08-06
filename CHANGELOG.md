@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.21.2] - 2026-08-06
+
+### Corrigé
+- **Vraie cause du bug de largeur identifiée** : ce n'était pas un problème de resize Chart.js (déjà corrigé en 1.21.1 mais le symptôme persistait), mais un comportement standard de CSS Grid — par défaut, une cellule de grille ne peut pas rétrécir en dessous de la taille intrinsèque de son contenu (`min-width: auto` implicite). La résolution interne du `<canvas>` (potentiellement bien plus large que sa taille affichée sur un écran haute densité) forçait sa colonne à s'élargir, cassant le partage 50/50 en 1/3-2/3.
+  Ajout de `min-width: 0` et `overflow: hidden` sur `.chart-card`, et `max-width: 100%` sur les canvas — la correctif CSS Grid standard pour ce cas précis.
+
 ## [1.21.1] - 2026-08-06
 
 ### Corrigé
