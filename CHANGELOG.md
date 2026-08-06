@@ -4,6 +4,21 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.21.0] - 2026-08-06
+
+### Ajouté
+- **Section Tensions Rôle/Score repliable** : repliée par défaut (avec compteur affiché à côté du titre), dépliable au clic. Évite qu'elle monopolise le haut de l'écran quand il n'y a rien à signaler ou que l'utilisateur veut aller direct aux statistiques.
+- **Bouton Fermer fixe** : un bouton ✕ est maintenant collé en haut de la modale Analyse (à côté du titre, toujours visible même en scrollant), pour lever l'ambiguïté avec les interactions de zoom/détail sur les graphiques. L'ancien bouton "Fermer" en bas de page est retiré (redondant).
+
+### Corrigé
+- **Bug de redimensionnement au repli d'une carte agrandie** : après avoir agrandi puis réduit un graphique, celui-ci pouvait rester visuellement bloqué sur une taille intermédiaire au lieu de revenir à sa taille normale. Le recalcul de taille (`chart.resize()`) est désormais différé après le prochain repaint du navigateur (`requestAnimationFrame`), le temps que les changements de classes CSS (grid-column, display) soient pleinement appliqués avant que Chart.js ne mesure le conteneur.
+- Réduire une carte agrandie ferme maintenant proprement la liste de détail associée (elle ne restait pas ouverte "orpheline" en arrière-plan).
+
+### Modifié — couleurs
+- **Qualité perçue** : dégradé rouge → vert (aligné sur la logique déjà en place pour les scores), remplace l'ancien dégradé de gris monochrome. Mis à jour directement dans `waima.echelle_qualite`.
+- **Formalité** : abandon du dégradé rouge → vert (qui laissait croire qu'un niveau de formalité élevé était "meilleur"). Remplacé par un dégradé bleu clair → bleu marine, neutre, qui suit la progression casual → strict sans jugement de valeur. Mis à jour dans `waima.echelle_formalite`.
+- **Catégories et Saison** : sortent du monochrome. Nouvelle palette qualitative (bleu, mauve, teal, rose, moutarde, ardoise, brun, indigo…) appliquée par position, volontairement hors registre rouge/orange/vert pour ne pas être confondue avec une échelle de qualité.
+
 ## [1.20.0] - 2026-08-06
 
 ### Modifié
