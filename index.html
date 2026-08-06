@@ -294,7 +294,7 @@
   .collapse-arrow.open{transform:rotate(90deg);}
   #tension-list{display:none;}
   #tension-list.open{display:block;}
-  .analyse-sticky-header{
+  .modal-sticky-header{
     position:sticky;top:0;z-index:5;
     background:var(--surface);
     margin:-20px -20px 14px;
@@ -303,8 +303,8 @@
     border-radius:16px 16px 0 0;
     display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
   }
-  .analyse-sticky-header h2{margin:0 0 4px;}
-  .analyse-sticky-header p.hint{margin:0;}
+  .modal-sticky-header h2{margin:0 0 4px;}
+  .modal-sticky-header p.hint{margin:0;}
   .modal-close-x{
     background:none;border:1px solid var(--border);border-radius:8px;
     color:var(--text-dim);font-size:.95rem;line-height:1;
@@ -562,19 +562,26 @@
 
 <div class="modal-overlay" id="changelog-overlay">
   <div class="modal">
-    <h2>Historique des versions</h2>
-    <p class="hint">Source de vérité : <a href="https://github.com/Jackmilkkaa/rep-WAIMA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> sur GitHub.</p>
-    <div id="changelog-body">Chargement…</div>
-    <div class="modal-actions">
-      <button class="btn" id="changelog-close">Fermer</button>
+    <div class="modal-sticky-header">
+      <div>
+        <h2>Historique des versions</h2>
+        <p class="hint">Source de vérité : <a href="https://github.com/Jackmilkkaa/rep-WAIMA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> sur GitHub.</p>
+      </div>
+      <button class="modal-close-x" id="changelog-close-x" title="Fermer">✕</button>
     </div>
+    <div id="changelog-body">Chargement…</div>
   </div>
 </div>
 
 <div class="modal-overlay" id="filter-overlay">
   <div class="modal">
-    <h2>Filtres</h2>
-    <p class="hint">Combine autant de critères que tu veux.</p>
+    <div class="modal-sticky-header">
+      <div>
+        <h2>Filtres</h2>
+        <p class="hint">Combine autant de critères que tu veux.</p>
+      </div>
+      <button class="modal-close-x" id="filters-close-x" title="Fermer">✕</button>
+    </div>
 
     <div class="filter-block">
       <label class="filter-label">Catégorie</label>
@@ -632,30 +639,31 @@
 
     <div class="modal-actions">
       <button class="btn btn-ghost" id="filters-reset">Réinitialiser</button>
-      <button class="btn" id="filters-close">Fermer</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="profile-overlay">
   <div class="modal">
-    <h2>Profil</h2>
-    <p class="hint">Détermine le vocabulaire utilisé pour l'ADN dominant (les autres réglages restent partagés).</p>
+    <div class="modal-sticky-header">
+      <div>
+        <h2>Profil</h2>
+        <p class="hint">Détermine le vocabulaire utilisé pour l'ADN dominant (les autres réglages restent partagés).</p>
+      </div>
+      <button class="modal-close-x" id="profile-close-x" title="Fermer">✕</button>
+    </div>
     <div class="profil-switch">
       <div class="profil-switch-track" id="profil-toggle">
         <button type="button" data-profil="homme"><span>♂</span> Homme</button>
         <button type="button" data-profil="femme"><span>♀</span> Femme</button>
       </div>
     </div>
-    <div class="modal-actions">
-      <button class="btn" id="profile-close">Fermer</button>
-    </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="analyse-overlay">
   <div class="modal modal-large">
-    <div class="analyse-sticky-header">
+    <div class="modal-sticky-header">
       <div>
         <h2>Analyse</h2>
         <p class="hint" id="analyse-scope-hint">Tensions Rôle / Score et vue d'ensemble de la garde-robe.</p>
@@ -769,8 +777,13 @@
 
 <div class="modal-overlay" id="add-overlay">
   <div class="modal">
-    <h2 id="add-modal-title">Ajouter une pièce</h2>
-    <p class="hint" id="add-modal-hint">Renseigne les champs ci-dessous.</p>
+    <div class="modal-sticky-header">
+      <div>
+        <h2 id="add-modal-title">Ajouter une pièce</h2>
+        <p class="hint" id="add-modal-hint">Renseigne les champs ci-dessous.</p>
+      </div>
+      <button class="modal-close-x" id="add-close-x" title="Fermer sans enregistrer">✕</button>
+    </div>
 
     <form id="item-form">
       <div class="form-section-title" style="margin-top:0;padding-top:0;border-top:none;">Photo</div>
@@ -1037,7 +1050,7 @@ $('#open-profile').addEventListener('click', () => {
   $$('#profil-toggle button').forEach(b => b.classList.toggle('active', b.dataset.profil === currentProfil));
   $('#profile-overlay').classList.add('open');
 });
-$('#profile-close').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
+$('#profile-close-x').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
 $$('#profil-toggle button').forEach(b => b.addEventListener('click', async () => {
   if(b.dataset.profil === currentProfil) return;
   currentProfil = b.dataset.profil;
@@ -1406,7 +1419,7 @@ $('#marque-filter').addEventListener('change', () => { render(); updateFilterBad
 $('#sort-select').addEventListener('change', render);
 
 $('#open-filters').addEventListener('click', () => $('#filter-overlay').classList.add('open'));
-$('#filters-close').addEventListener('click', () => $('#filter-overlay').classList.remove('open'));
+$('#filters-close-x').addEventListener('click', () => $('#filter-overlay').classList.remove('open'));
 $('#filters-reset').addEventListener('click', () => {
   activeAdn.clear(); activeTexture.clear(); activeSaison.clear();
   activeRoles = new Set(rolesRef.filter(r => r.code !== 'retraite').map(r => r.code));
@@ -1979,6 +1992,7 @@ $('#add-fab').addEventListener('click', () => {
   overlay.classList.add('open');
 });
 $('#add-cancel').addEventListener('click', () => overlay.classList.remove('open'));
+$('#add-close-x').addEventListener('click', () => overlay.classList.remove('open'));
 
 function openEditModal(it){
   editingId = it.id;
@@ -2134,7 +2148,7 @@ $('#version-footer').addEventListener('click', async () => {
     body.textContent = "Impossible de charger le changelog : " + err.message;
   }
 });
-$('#changelog-close').addEventListener('click', () => $('#changelog-overlay').classList.remove('open'));
+$('#changelog-close-x').addEventListener('click', () => $('#changelog-overlay').classList.remove('open'));
 
 function renderChangelog(md){
   const lines = md.split('\n');
