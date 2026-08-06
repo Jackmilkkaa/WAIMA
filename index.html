@@ -1548,6 +1548,8 @@ function clearChartDetailList(cardKey){
   container.innerHTML = '';
 }
 
+const chartBuildArgs = {};
+
 function setExpandedCard(cardKey){
   expandedCard = cardKey;
   $$('.chart-card[data-card]').forEach(card => {
@@ -1563,12 +1565,21 @@ function setExpandedCard(cardKey){
     btn.textContent = (btn.dataset.card === expandedCard) ? '⤡' : '⤢';
     btn.title = (btn.dataset.card === expandedCard) ? 'Réduire' : 'Plein écran';
   });
-  // Le resize est différé après le prochain paint pour laisser le navigateur
-  // terminer la mise en page suite au changement de classes (grid-column, display) —
-  // sans ce délai, Chart.js peut lire des dimensions transitoires et rester "coincé"
-  // sur une taille intermédiaire au moment de réduire une carte agrandie.
+  // On reconstruit entièrement les graphiques (destroy + new Chart) plutôt que de les
+  // redimensionner en place : un chart.resize() peut rester "coincé" sur une taille
+  // intermédiaire après un changement de grid-column/display, car Chart.js réutilise
+  // des mesures internes de l'instance précédente. Une instance neuve mesure toujours
+  // son conteneur à zéro, ce qui élimine la classe de bug entière. Différé après le
+  // prochain paint pour que le nouveau layout (classes CSS déjà posées) soit stable.
   requestAnimationFrame(() => {
-    Object.values(analyseCharts).forEach(c => c && c.resize());
+    Object.keys(chartBuildArgs).forEach(key => {
+      const card = document.querySelector(`.chart-card[data-card="${key}"]`);
+      if(!card) return;
+      const panel = card.closest('.analyse-tabpanel');
+      if(!panel || !panel.classList.contains('active')) return;
+      if(card.classList.contains('chart-card-hidden')) return;
+      rebuildChart(key);
+    });
   });
 }
 
@@ -1583,9 +1594,11 @@ $$('.chart-expand-btn').forEach(btn => {
 // ---------- Construction générique d'un graphique cliquable ----------
 // entries: [{label, color, items}]
 function renderBarChart(cardKey, canvasSelector, entries, opts = {}){
-  const { horizontal = false, rotateLabels = false, isPie = false, onSliceClick = null } = opts;
+  const { horizontal = false, rotateLabels = false, isPie = false, onSliceClick = null, preserveDetail = false } = opts;
+  chartBuildArgs[cardKey] = { canvasSelector, entries, opts };
+
   if(analyseCharts[cardKey]){ analyseCharts[cardKey].destroy(); analyseCharts[cardKey] = null; }
-  clearChartDetailList(cardKey);
+  if(!preserveDetail) clearChartDetailList(cardKey);
 
   const labels = entries.map(e => e.label);
   const data = entries.map(e => e.items.length);
@@ -1624,6 +1637,15 @@ function renderBarChart(cardKey, canvasSelector, entries, opts = {}){
       onHover: (evt, elements) => { evt.native.target.style.cursor = elements.length ? 'pointer' : 'default'; }
     }
   });
+}
+
+// Reconstruit un graphique déjà construit une fois, avec les mêmes données, en
+// préservant sa liste de détail ouverte (utilisé lors d'un agrandissement/réduction,
+// où seule la taille change — pas les données).
+function rebuildChart(cardKey){
+  const args = chartBuildArgs[cardKey];
+  if(!args) return;
+  renderBarChart(cardKey, args.canvasSelector, args.entries, { ...args.opts, preserveDetail: true });
 }
 
 let currentAnalyseScope = [];
