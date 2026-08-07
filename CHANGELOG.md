@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.25.4] - 2026-08-07
+
+### Modifié
+- **"Voir les X autres" devient une vraie bascule** : re-cliquer replie la liste (bouton repasse à "Voir les X autres"), au lieu de disparaître définitivement après le premier clic.
+
 ## [1.25.3] - 2026-08-07
 
 ### Ajouté
