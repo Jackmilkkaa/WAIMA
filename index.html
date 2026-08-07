@@ -770,6 +770,17 @@
           <canvas id="chart-formalite"></canvas>
           <div class="chart-detail-list" id="detail-formalite"></div>
         </div>
+        <div class="chart-card chart-wide" data-card="marques">
+          <h3><span id="chart-marques-title">Répartition par marque</span>
+            <span style="display:flex;gap:6px;">
+              <button class="chart-back-btn" id="chart-marques-back" style="display:none;">← Toutes les marques</button>
+              <button class="chart-expand-btn" data-card="marques" title="Plein écran">⤢</button>
+            </span>
+          </h3>
+          <p class="chart-subtitle">Clique une marque pour voir la répartition de ses pièces par catégorie.</p>
+          <canvas id="chart-marques"></canvas>
+          <div class="chart-detail-list" id="detail-marques"></div>
+        </div>
       </div>
     </div>
 
@@ -1781,6 +1792,7 @@ function rebuildChart(cardKey){
 let currentAnalyseScope = [];
 let currentAnalyseTab = 'identite';
 let categorieDrillLevel = null; // null = vue par catégorie, sinon nom de la catégorie sélectionnée
+let marqueDrillLevel = null; // null = vue par marque, sinon nom de la marque sélectionnée
 
 // ---------- Onglet Identité ----------
 function buildChartRoles(scope){
@@ -1860,6 +1872,42 @@ $('#chart-categorie-back').addEventListener('click', () => {
   buildChartCategorie(currentAnalyseScope.filter(it => it.role_code !== 'retraite'));
 });
 
+// Marques, avec drill-down au clic vers la répartition par catégorie de la marque,
+// puis liste de pièces au niveau feuille — même mécanique que le graphique Catégorie.
+function buildChartMarques(activeItems){
+  const backBtn = $('#chart-marques-back');
+  const title = $('#chart-marques-title');
+
+  if(marqueDrillLevel === null){
+    const grouped = groupBy(activeItems, it => it.marque ? it.marque.nom : null);
+    const sorted = [...grouped.entries()].sort((a,b) => b[1].length - a[1].length);
+    const entries = sorted.map(([k, items], i) => ({ label: k, color: qualitativeColor(i), items }));
+    title.textContent = 'Répartition par marque';
+    backBtn.style.display = 'none';
+    renderBarChart('marques', '#chart-marques', entries, {
+      rotateLabels: true,
+      onSliceClick: (entry) => {
+        marqueDrillLevel = entry.label;
+        buildChartMarques(currentAnalyseScope.filter(it => it.role_code !== 'retraite'));
+      }
+    });
+  } else {
+    const scoped = activeItems.filter(it => it.marque && it.marque.nom === marqueDrillLevel);
+    const grouped = groupBy(scoped, it => it.categorie ? it.categorie.categorie : 'Non précisé');
+    const sorted = [...grouped.entries()].sort((a,b) => b[1].length - a[1].length);
+    const entries = sorted.map(([k, items], i) => ({ label: k, color: qualitativeColor(i), items }));
+    title.textContent = `Catégories — ${marqueDrillLevel}`;
+    backBtn.style.display = '';
+    // Au niveau feuille, un clic affiche directement la liste des pièces
+    renderBarChart('marques', '#chart-marques', entries, { rotateLabels: entries.length > 6 });
+  }
+}
+
+$('#chart-marques-back').addEventListener('click', () => {
+  marqueDrillLevel = null;
+  buildChartMarques(currentAnalyseScope.filter(it => it.role_code !== 'retraite'));
+});
+
 // ---------- Onglet Usage ----------
 function buildChartSaison(activeItems){
   const grouped = new Map();
@@ -1881,11 +1929,13 @@ const TAB_BUILDERS = {
   },
   composition: (scope, activeItems) => {
     categorieDrillLevel = null;
+    marqueDrillLevel = null;
     buildChartCategorie(activeItems);
     buildChartCouleurs(activeItems);
     buildEchelleChart('qualite', '#chart-qualite', activeItems, 'qualite_percue', 'qualite');
     buildEchelleChart('premium', '#chart-premium', activeItems, 'premium_percu', 'premium');
     buildEchelleChart('formalite', '#chart-formalite', activeItems, 'formalite', 'formalite');
+    buildChartMarques(activeItems);
   },
   usage: (scope, activeItems) => {
     buildEchelleChart('frequence', '#chart-frequence', activeItems, 'frequence', 'frequence');
