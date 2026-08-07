@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.23.1] - 2026-08-06
+
+### Ajouté
+- **Graphique Marques dans l'onglet Composition** (Analyse) : placé en dernier, pleine largeur (beaucoup de marques distinctes). Clique une marque pour voir la répartition de ses pièces par catégorie, puis clique une catégorie pour voir la liste des pièces — même mécanique de drill-down que le graphique Catégorie.
+
 ## [1.23.0] - 2026-08-06
 
 ### Ajouté
