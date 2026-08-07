@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.25.1] - 2026-08-07
+
+### Corrigé
+- **Chemises et Mailles (pulls, q-zip) ne se matchaient jamais entre elles**, alors qu'elles se portent ensemble en layering (chemise dessous, pull dessus) plutôt qu'en alternative. Même souci entre Vestes et Manteaux (blazer sous un manteau). L'exclusion se fait maintenant sur la catégorie exacte plutôt que sur la famille de tenue entière — deux chemises entre elles restent exclues, mais chemise+maille et veste+manteau sont maintenant proposées.
+- Affichage de la catégorie exacte à côté de la marque dans les résultats, pour distinguer chemise/maille au sein du groupe "Haut" (et veste/manteau).
+
 ## [1.25.0] - 2026-08-07
 
 ### Ajouté
