@@ -286,14 +286,33 @@
     user-select:none;
   }
   .analyse-section-title.collapsible:hover{color:var(--accent);}
-  .analyse-section-title.collapsible #tension-count-badge{
+  .analyse-section-title.collapsible .count-badge{
     font-family:'IBM Plex Mono',monospace;font-style:normal;font-size:.75rem;
     color:var(--text-dim);margin-left:6px;
   }
   .collapse-arrow{font-size:.8rem;color:var(--text-dim);transition:transform .15s;display:inline-block;}
   .collapse-arrow.open{transform:rotate(90deg);}
-  #tension-list{display:none;}
-  #tension-list.open{display:block;}
+  .collapsible-body{display:none;}
+  .collapsible-body.open{display:block;}
+  .coherence-subtitle{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:600;
+    font-size:.88rem;margin:20px 0 4px;color:var(--text);
+  }
+  .coherence-subtitle:first-child{margin-top:2px;}
+  .coherence-table{width:100%;border-collapse:collapse;font-size:.8rem;margin:6px 0 4px;}
+  .coherence-table th{
+    text-align:left;color:var(--text-dim);font-weight:600;font-size:.68rem;
+    text-transform:uppercase;letter-spacing:.03em;padding:5px 8px;border-bottom:1px solid var(--border);
+  }
+  .coherence-table td{padding:5px 8px;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;}
+  .coherence-table td:first-child{font-family:inherit;font-weight:600;}
+  .coherence-table tr:last-child td{border-bottom:none;}
+  .coherence-table tr.flagged td:first-child{color:var(--accent);}
+  .noyau-stat-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;}
+  .noyau-stat-value{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:1.3rem;color:var(--accent);}
+  .noyau-stat-label{font-size:.78rem;color:var(--text-dim);}
+  .noyau-bar{height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin:6px 0 12px;display:flex;}
+  .noyau-bar-fill{height:100%;background:var(--accent);}
   .modal-sticky-header{
     position:sticky;top:0;z-index:5;
     background:var(--surface);
@@ -698,12 +717,6 @@
       <button class="modal-close-x" id="analyse-close-x" title="Fermer l'analyse">✕</button>
     </div>
 
-    <div class="analyse-section-title collapsible" id="tension-toggle">
-      <span>Tensions Rôle / Score<span id="tension-count-badge"></span></span>
-      <span class="collapse-arrow" id="tension-arrow">▸</span>
-    </div>
-    <div id="tension-list"></div>
-
     <div class="analyse-section-title">Statistiques</div>
     <div class="analyse-tabs" id="analyse-tabs">
       <button class="analyse-tab active" data-tab="identite">Identité</button>
@@ -808,6 +821,37 @@
           <div class="chart-detail-list" id="detail-saison"></div>
         </div>
       </div>
+    </div>
+
+    <div class="analyse-section-title collapsible" id="coherence-toggle">
+      <span>Cohérence<span class="count-badge" id="coherence-count-badge"></span></span>
+      <span class="collapse-arrow" id="coherence-arrow">▸</span>
+    </div>
+    <div id="coherence-body" class="collapsible-body">
+
+      <div class="coherence-subtitle">Tensions Rôle / Score<span class="count-badge" id="tension-count-badge"></span></div>
+      <p class="mercato-section-hint">Pièces dont le score s'écarte des seuils attendus pour leur rôle.</p>
+      <div id="tension-list"></div>
+
+      <div class="coherence-subtitle">Scores par rôle</div>
+      <p class="mercato-section-hint">Moyenne, médiane et dispersion des scores, rôle par rôle — sur le périmètre filtré actuel.</p>
+      <div id="scores-role-table"></div>
+
+      <div class="coherence-subtitle">Écarts au groupe<span class="count-badge" id="ecart-count-badge"></span></div>
+      <p class="mercato-section-hint">Spectateur / Transfert / Retraité dont le score dépasse nettement la moyenne de leur rôle (&gt; moyenne + 1 écart-type) — potentiel sous-évalué à re-questionner.</p>
+      <div id="ecart-groupe-list"></div>
+
+      <div class="coherence-subtitle">Désaccord score / vécu réel<span class="count-badge" id="desaccord-count-badge"></span></div>
+      <p class="mercato-section-hint">Fréquence et attachement élevés mais score modeste (sous-évaluation probable), ou l'inverse (score généreux, usage réel faible).</p>
+      <div id="desaccord-list"></div>
+
+      <div class="coherence-subtitle">Équilibre de l'effectif</div>
+      <div id="noyau-dur-body"></div>
+
+      <div class="coherence-subtitle">Qualité par formalité</div>
+      <p class="mercato-section-hint">Un niveau bien couvert en nombre de pièces ne veut pas dire bien couvert en qualité.</p>
+      <div id="qualite-formalite-table"></div>
+
     </div>
 
   </div>
@@ -1574,17 +1618,17 @@ function destroyAnalyseCharts(){
   analyseCharts = {};
 }
 
-let tensionsExpanded = false;
+let coherenceExpanded = false;
 
-function applyTensionsCollapseState(){
-  $('#tension-list').classList.toggle('open', tensionsExpanded);
-  $('#tension-arrow').classList.toggle('open', tensionsExpanded);
-  $('#tension-arrow').textContent = tensionsExpanded ? '▾' : '▸';
+function applyCoherenceCollapseState(){
+  $('#coherence-body').classList.toggle('open', coherenceExpanded);
+  $('#coherence-arrow').classList.toggle('open', coherenceExpanded);
+  $('#coherence-arrow').textContent = coherenceExpanded ? '▾' : '▸';
 }
 
-$('#tension-toggle').addEventListener('click', () => {
-  tensionsExpanded = !tensionsExpanded;
-  applyTensionsCollapseState();
+$('#coherence-toggle').addEventListener('click', () => {
+  coherenceExpanded = !coherenceExpanded;
+  applyCoherenceCollapseState();
 });
 
 function buildTensionList(scope){
@@ -1594,19 +1638,23 @@ function buildTensionList(scope){
     .filter(x => x.t !== null);
 
   $('#tension-count-badge').textContent = tensions.length ? ` (${tensions.length})` : '';
-  applyTensionsCollapseState();
 
-  // Sévérité : distance à un seuil générique (7.5 hors capitaine où c'est 8.5) —
-  // plus l'écart est grand, plus la tension remonte en tête de liste.
+  // Sévérité : distance au seuil réel de chaque rôle — plus l'écart est grand,
+  // plus la tension remonte en tête de liste.
   const severity = ({it, t}) => {
-    const threshold = it.role_code === 'capitaine' ? 8.5 : (it.role_code === 'remplacant' ? (t.type==='excess'?6.5:7.5) : 7.5);
+    let threshold;
+    if(it.role_code === 'capitaine') threshold = 8.5;
+    else if(it.role_code === 'titulaire') threshold = 7.5;
+    else if(it.role_code === 'rotation') threshold = 8;
+    else if(it.role_code === 'remplacant') threshold = t.type === 'excess' ? 6.5 : 7.5;
+    else threshold = 7.5;
     return Math.abs(Number(it.score) - threshold);
   };
   tensions.sort((a,b) => severity(b) - severity(a));
 
   if(tensions.length === 0){
     container.innerHTML = `<div class="tension-empty">Aucune tension détectée — les rôles collent aux scores actuels.</div>`;
-    return;
+    return tensions.length;
   }
   container.innerHTML = tensions.map(({it, t}) => `
     <div class="tension-row" data-id="${escapeHtml(it.id)}">
@@ -1625,6 +1673,181 @@ function buildTensionList(scope){
       if(it) openEditModal(it);
     });
   });
+  return tensions.length;
+}
+
+// ---------- Cohérence : stats par rôle + détections ----------
+function computeStats(values){
+  const sorted = [...values].sort((a,b) => a - b);
+  const n = sorted.length;
+  if(n === 0) return null;
+  const mean = sorted.reduce((a,b) => a+b, 0) / n;
+  const median = n % 2 === 0 ? (sorted[n/2-1] + sorted[n/2]) / 2 : sorted[(n-1)/2];
+  const variance = sorted.reduce((a,b) => a + (b-mean)**2, 0) / n;
+  const stddev = Math.sqrt(variance);
+  return { n, mean, median, min: sorted[0], max: sorted[n-1], stddev };
+}
+
+function fmt1(n){ return n == null ? '—' : Number(n).toFixed(1); }
+function fmt2(n){ return n == null ? '—' : Number(n).toFixed(2); }
+
+function clickableRow(it, subtitle){
+  return `
+    <div class="chart-detail-row" data-id="${escapeHtml(it.id)}">
+      <div class="chart-detail-title">${escapeHtml(it.libelle)}</div>
+      <div class="chart-detail-sub">${subtitle}</div>
+      <div class="chart-detail-score" style="${scoreBand(it.score) ? `color:${scoreBand(it.score).couleur};` : ''}">${fmt1(it.score)}</div>
+    </div>`;
+}
+
+function bindClickableRows(container){
+  container.querySelectorAll('.chart-detail-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const it = allItems.find(i => i.id === row.dataset.id);
+      if(it) openEditModal(it);
+    });
+  });
+}
+
+function buildScoresParRoleTable(scope){
+  const container = $('#scores-role-table');
+  const rows = rolesRef.map(r => {
+    const scores = scope.filter(it => it.role_code === r.code && it.score != null).map(it => Number(it.score));
+    const s = computeStats(scores);
+    return { role: r, s };
+  });
+  container.innerHTML = `
+    <table class="coherence-table">
+      <thead><tr><th>Rôle</th><th>N</th><th>Moyenne</th><th>Médiane</th><th>Min</th><th>Max</th><th>Écart-type</th></tr></thead>
+      <tbody>
+        ${rows.map(({role, s}) => `
+          <tr>
+            <td style="color:${role.couleur}">${escapeHtml(role.libelle)}</td>
+            <td>${s ? s.n : 0}</td>
+            <td>${s ? fmt2(s.mean) : '—'}</td>
+            <td>${s ? fmt2(s.median) : '—'}</td>
+            <td>${s ? fmt1(s.min) : '—'}</td>
+            <td>${s ? fmt1(s.max) : '—'}</td>
+            <td>${s ? fmt2(s.stddev) : '—'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+// Pièces Spectateur/Transfert/Retraité dont le score dépasse nettement la moyenne de leur
+// groupe (> moyenne + 1 écart-type) — potentiel sous-évalué, sortie possiblement liée à
+// autre chose que la qualité de la pièce (usure, taille, contexte).
+function buildEcartGroupe(scope){
+  const container = $('#ecart-groupe-list');
+  const contextRoles = ['spectateur', 'transfert', 'retraite'];
+  const flagged = [];
+  contextRoles.forEach(code => {
+    const items = scope.filter(it => it.role_code === code && it.score != null);
+    if(items.length < 3) return; // stats peu fiables sous 3 pièces
+    const s = computeStats(items.map(it => Number(it.score)));
+    const threshold = s.mean + s.stddev;
+    items.forEach(it => {
+      if(Number(it.score) > threshold) flagged.push({ it, role: it.role, threshold });
+    });
+  });
+  flagged.sort((a,b) => Number(b.it.score) - Number(a.it.score));
+  $('#ecart-count-badge').textContent = flagged.length ? ` (${flagged.length})` : '';
+  if(flagged.length === 0){
+    container.innerHTML = `<div class="tension-empty">Aucun écart notable — les rôles de contexte sont cohérents avec leurs scores.</div>`;
+    return;
+  }
+  container.innerHTML = flagged.map(({it, role, threshold}) =>
+    clickableRow(it, `${escapeHtml(role?.libelle || it.role_code)} · au-dessus du seuil groupe (${fmt2(threshold)})`)
+  ).join('');
+  bindClickableRows(container);
+}
+
+// Désaccord entre le score et le vécu réel (fréquence + attachement).
+function buildDesaccordList(scope){
+  const container = $('#desaccord-list');
+  const active = scope.filter(it => it.role_code !== 'retraite' && it.role_code !== 'recrue_potentielle' && it.score != null && it.frequence != null && it.attachement != null);
+  const flagged = [];
+  active.forEach(it => {
+    const freq = Number(it.frequence), att = Number(it.attachement), score = Number(it.score);
+    if(freq >= 4 && att >= 4 && score < 7.5){
+      flagged.push({ it, type: 'sous', detail: `Fréquence ${freq}/5, attachement ${att}/5 — score peut-être trop sévère` });
+    } else if(freq <= 2 && att <= 2 && score >= 8){
+      flagged.push({ it, type: 'sur', detail: `Fréquence ${freq}/5, attachement ${att}/5 — score peut-être trop généreux vu l'usage réel` });
+    }
+  });
+  flagged.sort((a,b) => Number(b.it.score) - Number(a.it.score));
+  $('#desaccord-count-badge').textContent = flagged.length ? ` (${flagged.length})` : '';
+  if(flagged.length === 0){
+    container.innerHTML = `<div class="tension-empty">Aucun désaccord détecté — score et usage réel racontent la même histoire.</div>`;
+    return;
+  }
+  container.innerHTML = flagged.map(({it, detail}) => clickableRow(it, detail)).join('');
+  bindClickableRows(container);
+}
+
+// Équilibre de l'effectif actif : poids du noyau dur (Capitaine + Titulaire).
+function buildNoyauDur(scope){
+  const container = $('#noyau-dur-body');
+  const active = scope.filter(it => it.role_code !== 'retraite' && it.role_code !== 'recrue_potentielle');
+  const total = active.length;
+  if(total === 0){
+    container.innerHTML = `<div class="tension-empty">Pas assez de pièces dans le périmètre filtré.</div>`;
+    return;
+  }
+  const noyau = active.filter(it => it.role_code === 'capitaine' || it.role_code === 'titulaire').length;
+  const noyauElargi = noyau + active.filter(it => it.role_code === 'rotation').length;
+  const pct = (noyau / total) * 100;
+  const pctElargi = (noyauElargi / total) * 100;
+  container.innerHTML = `
+    <div class="noyau-stat-row">
+      <span class="noyau-stat-value">${pct.toFixed(0)}%</span>
+      <span class="noyau-stat-label">Noyau dur (Capitaine + Titulaire) sur ${total} pièces actives</span>
+    </div>
+    <div class="noyau-bar"><div class="noyau-bar-fill" style="width:${pct}%"></div></div>
+    <p class="mercato-section-hint" style="margin-top:-2px;">Si on inclut Rotation dans l'effectif régulièrement utilisé : <strong style="color:var(--text);font-family:'IBM Plex Mono',monospace;">${pctElargi.toFixed(0)}%</strong> (${noyauElargi}/${total}).</p>
+  `;
+}
+
+// Score moyen par niveau de formalité — un niveau couvert en nombre peut rester faible en qualité.
+function buildQualiteFormalite(scope){
+  const container = $('#qualite-formalite-table');
+  const bands = echelleRef.formalite || [];
+  const rows = bands.map(b => {
+    const items = scope.filter(it => it.formalite === b.valeur && it.score != null);
+    const s = computeStats(items.map(it => Number(it.score)));
+    const weak = s && s.n > 0 && s.mean < 7;
+    return { band: b, s, weak };
+  });
+  container.innerHTML = `
+    <table class="coherence-table">
+      <thead><tr><th>Niveau</th><th>N</th><th>Score moyen</th><th>Signal</th></tr></thead>
+      <tbody>
+        ${rows.map(({band, s, weak}) => `
+          <tr class="${weak ? 'flagged' : ''}">
+            <td style="color:${band.couleur}">${escapeHtml(band.libelle)}</td>
+            <td>${s ? s.n : 0}</td>
+            <td>${s ? fmt2(s.mean) : '—'}</td>
+            <td>${weak ? '⚠ point de fragilité' : (s && s.n > 0 ? '—' : 'non couvert')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function buildCoherence(scope){
+  const nTensions = buildTensionList(scope);
+  buildScoresParRoleTable(scope);
+  buildEcartGroupe(scope);
+  buildDesaccordList(scope);
+  buildNoyauDur(scope);
+  buildQualiteFormalite(scope);
+
+  const nEcarts = $('#ecart-groupe-list').querySelectorAll('.chart-detail-row').length;
+  const nDesaccords = $('#desaccord-list').querySelectorAll('.chart-detail-row').length;
+  const total = nTensions + nEcarts + nDesaccords;
+  $('#coherence-count-badge').textContent = total ? ` (${total})` : '';
+  applyCoherenceCollapseState();
 }
 
 function groupBy(items, keyFn){
@@ -1964,7 +2187,7 @@ function openAnalyse(){
   const scope = getFiltered();
   currentAnalyseScope = scope;
   $('#analyse-scope-hint').textContent = `${scope.length} pièce(s) affichée(s) — reflète les filtres et la recherche actifs sur la liste principale.`;
-  buildTensionList(scope);
+  buildCoherence(scope);
   renderAnalyseTab(currentAnalyseTab);
   $('#analyse-overlay').classList.add('open');
 }
