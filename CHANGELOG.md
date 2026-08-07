@@ -4,6 +4,16 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.24.2] - 2026-08-06
+
+### Corrigé
+- **Retour arrière sur le correctif 1.24.1** : ce n'était pas un bug. Analyse s'appuie sur la liste filtrée par design — pour inclure les recrues dans "Scores par rôle" et "Écarts au groupe", il suffit de les cocher dans le filtre Rôle, comme pour tout le reste de l'écran.
+
+### Modifié
+- **"Statistiques" devient repliable**, comme "Cohérence" — même mécanique (titre cliquable, flèche).
+- **Les deux blocs (Statistiques et Cohérence) sont dépliés par défaut** à l'ouverture d'Analyse.
+- **Textes d'aide allégés** : suppression des paragraphes explicatifs sous les titres de graphiques et sous-sections de Cohérence (ADN secondaire, Catégorie, Marques, Écarts au groupe, Désaccord, Qualité par formalité) — le détail reste dans ce changelog plutôt que sur l'écran.
+
 ## [1.24.1] - 2026-08-06
 
 ### Corrigé
