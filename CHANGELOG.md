@@ -4,6 +4,17 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.24.0] - 2026-08-06
+
+### Ajouté
+- **Nouveau bloc "Cohérence"** dans Analyse, placé sous Statistiques, repliable (fermé par défaut, badge indiquant le nombre total de signaux). Regroupe :
+  - **Tensions Rôle / Score** (déplacée depuis le haut de la modale, comportement inchangé, seuil Rotation relevé à 8 au lieu de 7,5 — trop de pièces déclenchaient le signal avec l'ancien seuil).
+  - **Scores par rôle** : tableau N / moyenne / médiane / min / max / écart-type par rôle, sur le périmètre filtré actuel.
+  - **Écarts au groupe** : pièces Spectateur/Transfert/Retraité dont le score dépasse la moyenne de leur rôle de plus d'un écart-type — signale un potentiel sous-évalué (sortie peut-être liée à autre chose qu'un problème de qualité).
+  - **Désaccord score / vécu réel** : pièces où fréquence et attachement élevés contredisent un score modeste (sous-évaluation probable), ou l'inverse (score généreux mais usage réel faible).
+  - **Équilibre de l'effectif** : poids du noyau dur (Capitaine + Titulaire) dans la garde-robe active, avec une lecture alternative incluant Rotation.
+  - **Qualité par formalité** : score moyen par niveau de formalité, signale un niveau bien couvert en nombre mais faible en qualité moyenne (&lt;7).
+
 ## [1.23.2] - 2026-08-06
 
 ### Modifié
