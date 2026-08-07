@@ -1242,7 +1242,7 @@ function renderMatchesForItem(id){
       const rows = list.map((m, idx) => matchRowHtml(m, idx >= MATCH_INITIAL_COUNT)).join('');
       const extraCount = list.length - MATCH_INITIAL_COUNT;
       const seeMoreBtn = extraCount > 0
-        ? `<button type="button" class="match-see-more" data-group-id="${groupId}">Voir les ${extraCount} autre${extraCount>1?'s':''}</button>`
+        ? `<button type="button" class="match-see-more" data-group-id="${groupId}" data-label-more="Voir les ${extraCount} autre${extraCount>1?'s':''}" data-label-less="Réduire">Voir les ${extraCount} autre${extraCount>1?'s':''}</button>`
         : '';
       return `
         <div class="match-group-label">${escapeHtml(g)}</div>
@@ -1263,8 +1263,9 @@ function renderMatchesForItem(id){
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const groupEl = document.getElementById(btn.dataset.groupId);
-      groupEl.querySelectorAll('.match-row-extra').forEach(r => { r.style.display = ''; });
-      btn.remove();
+      const isOpen = btn.textContent === btn.dataset.labelLess;
+      groupEl.querySelectorAll('.match-row-extra').forEach(r => { r.style.display = isOpen ? 'none' : ''; });
+      btn.textContent = isOpen ? btn.dataset.labelMore : btn.dataset.labelLess;
     });
   });
 }
