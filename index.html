@@ -1645,7 +1645,11 @@ function render(){
         ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
         <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
         ${it.description_ia ? `<div class="detail-row" style="margin-top:8px;">${escapeHtml(it.description_ia)}</div>` : ''}
-        <div class="match-associations" id="match-${escapeHtml(it.id)}"></div>
+        <div class="analyse-section-title collapsible match-toggle" style="margin:14px 0 6px;font-size:.85rem;" data-id="${escapeHtml(it.id)}">
+          <span>Associations</span>
+          <span class="collapse-arrow" data-match-arrow="${escapeHtml(it.id)}">▸</span>
+        </div>
+        <div class="match-associations collapsible-body" id="match-${escapeHtml(it.id)}"></div>
         <div class="item-actions">
           <button class="btn-ghost item-edit-btn" data-id="${escapeHtml(it.id)}" style="border-radius:8px;padding:8px 14px;font-size:.8rem;cursor:pointer;">Modifier</button>
           <button class="btn-ghost item-delete-btn" data-id="${escapeHtml(it.id)}" style="border-radius:8px;padding:8px 14px;font-size:.8rem;cursor:pointer;color:#e07a5f;border-color:#5a3a30;">Supprimer</button>
@@ -1655,9 +1659,20 @@ function render(){
   }).join('');
 
   $$('.item').forEach(el => {
-    el.addEventListener('click', () => {
-      el.classList.toggle('expanded');
-      if(el.classList.contains('expanded')) renderMatchesForItem(el.dataset.id);
+    el.addEventListener('click', () => el.classList.toggle('expanded'));
+  });
+
+  $$('.match-toggle').forEach(toggle => {
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = toggle.dataset.id;
+      const body = document.getElementById('match-' + id);
+      const arrow = toggle.querySelector('.collapse-arrow');
+      const willOpen = !body.classList.contains('open');
+      body.classList.toggle('open', willOpen);
+      arrow.classList.toggle('open', willOpen);
+      arrow.textContent = willOpen ? '▾' : '▸';
+      if(willOpen) renderMatchesForItem(id);
     });
   });
 
