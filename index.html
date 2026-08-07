@@ -1180,11 +1180,12 @@ function matchTier(score){
 // Meilleurs partenaires d'une pièce, groupés par famille de tenue (hors sa propre famille
 // et hors Accessoires), limités aux pièces actives (hors Retraité / Recrue potentielle).
 function getBestMatches(it, pool, topN = 3){
-  const myGroup = outfitGroup(it);
+  const myCategorie = it.categorie ? it.categorie.categorie : null;
   const candidates = pool.filter(other =>
     other.id !== it.id &&
     other.role_code !== 'retraite' && other.role_code !== 'recrue_potentielle' &&
-    outfitGroup(other) !== null && outfitGroup(other) !== myGroup
+    outfitGroup(other) !== null &&
+    (other.categorie ? other.categorie.categorie : null) !== myCategorie
   );
   const byGroup = {};
   candidates.forEach(other => {
@@ -1226,7 +1227,7 @@ function renderMatchesForItem(id){
           <span class="match-tier" style="background:${m.tier.couleur}" title="${escapeHtml(m.tier.label)}">${m.tier.code}</span>
           <div class="match-text">
             <div class="match-title">${escapeHtml(m.item.libelle)}</div>
-            <div class="match-sub">${escapeHtml(m.item.marque?.nom || '—')}</div>
+            <div class="match-sub">${escapeHtml(m.item.marque?.nom || '—')} · ${escapeHtml(m.item.categorie?.categorie || '')}</div>
           </div>
           <div class="match-pct">${m.score}%</div>
         </div>
