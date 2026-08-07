@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.23.2] - 2026-08-06
+
+### Modifié
+- **Seuil de tension Rotation relevé** : signalé désormais uniquement au-dessus de 8 (au lieu de 7,5) — "Potentiel sous-exploité" ne se déclenche que pour une Rotation vraiment au niveau Titulaire, pas dès qu'elle dépasse légèrement 7,5. Trop de pièces déclenchaient le signal avec l'ancien seuil.
+
 ## [1.23.1] - 2026-08-06
 
 ### Ajouté
