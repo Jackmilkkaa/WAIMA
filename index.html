@@ -717,7 +717,11 @@
       <button class="modal-close-x" id="analyse-close-x" title="Fermer l'analyse">✕</button>
     </div>
 
-    <div class="analyse-section-title">Statistiques</div>
+    <div class="analyse-section-title collapsible" id="stats-toggle">
+      <span>Statistiques</span>
+      <span class="collapse-arrow open" id="stats-arrow">▾</span>
+    </div>
+    <div id="stats-body" class="collapsible-body open">
     <div class="analyse-tabs" id="analyse-tabs">
       <button class="analyse-tab active" data-tab="identite">Identité</button>
       <button class="analyse-tab" data-tab="composition">Composition</button>
@@ -743,7 +747,6 @@
         </div>
         <div class="chart-card" data-card="adn-sec">
           <h3><span>ADN secondaire</span><button class="chart-expand-btn" data-card="adn-sec" title="Plein écran">⤢</button></h3>
-          <p class="chart-subtitle">Pièces ayant un registre secondaire renseigné.</p>
           <canvas id="chart-adn-sec"></canvas>
           <div class="chart-detail-list" id="detail-adn-sec"></div>
         </div>
@@ -759,7 +762,6 @@
               <button class="chart-expand-btn" data-card="categorie" title="Plein écran">⤢</button>
             </span>
           </h3>
-          <p class="chart-subtitle">Clique une barre pour voir le détail par sous-catégorie, puis les pièces qui la composent.</p>
           <canvas id="chart-categorie"></canvas>
           <div class="chart-detail-list" id="detail-categorie"></div>
         </div>
@@ -790,7 +792,6 @@
               <button class="chart-expand-btn" data-card="marques" title="Plein écran">⤢</button>
             </span>
           </h3>
-          <p class="chart-subtitle">Clique une marque pour voir la répartition de ses pièces par catégorie.</p>
           <canvas id="chart-marques"></canvas>
           <div class="chart-detail-list" id="detail-marques"></div>
         </div>
@@ -816,40 +817,35 @@
         </div>
         <div class="chart-card" data-card="saison">
           <h3><span>Saison</span><button class="chart-expand-btn" data-card="saison" title="Plein écran">⤢</button></h3>
-          <p class="chart-subtitle">Une pièce multi-saison compte dans chaque saison qu'elle couvre.</p>
           <canvas id="chart-saison"></canvas>
           <div class="chart-detail-list" id="detail-saison"></div>
         </div>
       </div>
     </div>
+    </div>
 
     <div class="analyse-section-title collapsible" id="coherence-toggle">
       <span>Cohérence<span class="count-badge" id="coherence-count-badge"></span></span>
-      <span class="collapse-arrow" id="coherence-arrow">▸</span>
+      <span class="collapse-arrow open" id="coherence-arrow">▾</span>
     </div>
-    <div id="coherence-body" class="collapsible-body">
+    <div id="coherence-body" class="collapsible-body open">
 
       <div class="coherence-subtitle">Tensions Rôle / Score<span class="count-badge" id="tension-count-badge"></span></div>
-      <p class="mercato-section-hint">Pièces dont le score s'écarte des seuils attendus pour leur rôle.</p>
       <div id="tension-list"></div>
 
       <div class="coherence-subtitle">Scores par rôle</div>
-      <p class="mercato-section-hint">Moyenne, médiane et dispersion des scores, rôle par rôle — tous rôles inclus (y compris Retraité et Recrue potentielle), même si masqués de la liste principale. Respecte les autres filtres actifs (catégorie, marque, recherche…).</p>
       <div id="scores-role-table"></div>
 
       <div class="coherence-subtitle">Écarts au groupe<span class="count-badge" id="ecart-count-badge"></span></div>
-      <p class="mercato-section-hint">Spectateur / Transfert / Retraité (tous inclus, même masqués de la liste) dont le score dépasse nettement la moyenne de leur rôle (&gt; moyenne + 1 écart-type) — potentiel sous-évalué à re-questionner.</p>
       <div id="ecart-groupe-list"></div>
 
       <div class="coherence-subtitle">Désaccord score / vécu réel<span class="count-badge" id="desaccord-count-badge"></span></div>
-      <p class="mercato-section-hint">Fréquence et attachement élevés mais score modeste (sous-évaluation probable), ou l'inverse (score généreux, usage réel faible).</p>
       <div id="desaccord-list"></div>
 
       <div class="coherence-subtitle">Équilibre de l'effectif</div>
       <div id="noyau-dur-body"></div>
 
       <div class="coherence-subtitle">Qualité par formalité</div>
-      <p class="mercato-section-hint">Un niveau bien couvert en nombre de pièces ne veut pas dire bien couvert en qualité.</p>
       <div id="qualite-formalite-table"></div>
 
     </div>
@@ -1364,8 +1360,7 @@ function populateSousCategorieFilter(){
   });
 }
 
-function getFiltered(opts = {}){
-  const { ignoreRoleFilter = false } = opts;
+function getFiltered(){
   const q = $('#search-input').value.trim().toLowerCase();
   const cat = $('#category-filter').value;
   const sousCat = $('#sous-categorie-filter').value;
@@ -1374,7 +1369,7 @@ function getFiltered(opts = {}){
     if(cat && (!it.categorie || it.categorie.categorie !== cat)) return false;
     if(sousCat && (!it.categorie || it.categorie.sous_categorie !== sousCat)) return false;
     if(marque && (!it.marque || it.marque.nom !== marque)) return false;
-    if(!ignoreRoleFilter && activeRoles.size > 0 && !activeRoles.has(it.role_code)) return false;
+    if(activeRoles.size > 0 && !activeRoles.has(it.role_code)) return false;
     if(activeAdn.size > 0 && !activeAdn.has(it.adn_dominant_code)) return false;
     if(activeTexture.size > 0 && !activeTexture.has(it.texture)) return false;
     if(activeSaison.size > 0 && !(it.saison||[]).some(s => activeSaison.has(s))) return false;
@@ -1619,7 +1614,19 @@ function destroyAnalyseCharts(){
   analyseCharts = {};
 }
 
-let coherenceExpanded = false;
+let statsExpanded = true;
+let coherenceExpanded = true;
+
+function applyStatsCollapseState(){
+  $('#stats-body').classList.toggle('open', statsExpanded);
+  $('#stats-arrow').classList.toggle('open', statsExpanded);
+  $('#stats-arrow').textContent = statsExpanded ? '▾' : '▸';
+}
+
+$('#stats-toggle').addEventListener('click', () => {
+  statsExpanded = !statsExpanded;
+  applyStatsCollapseState();
+});
 
 function applyCoherenceCollapseState(){
   $('#coherence-body').classList.toggle('open', coherenceExpanded);
@@ -1837,16 +1844,9 @@ function buildQualiteFormalite(scope){
 }
 
 function buildCoherence(scope){
-  // Scores par rôle et Écarts au groupe doivent comparer TOUS les rôles, y compris
-  // Retraité et Recrue potentielle — masqués par défaut de la liste principale, mais
-  // ça n'a pas de sens de les faire disparaître d'un tableau dont le but est justement
-  // de les comparer aux autres. On respecte les autres filtres (catégorie, marque,
-  // recherche...) mais on ignore spécifiquement le filtre Rôle pour ces deux blocs.
-  const roleAgnosticScope = getFiltered({ ignoreRoleFilter: true });
-
   const nTensions = buildTensionList(scope);
-  buildScoresParRoleTable(roleAgnosticScope);
-  buildEcartGroupe(roleAgnosticScope);
+  buildScoresParRoleTable(scope);
+  buildEcartGroupe(scope);
   buildDesaccordList(scope);
   buildNoyauDur(scope);
   buildQualiteFormalite(scope);
@@ -2195,6 +2195,7 @@ function openAnalyse(){
   const scope = getFiltered();
   currentAnalyseScope = scope;
   $('#analyse-scope-hint').textContent = `${scope.length} pièce(s) affichée(s) — reflète les filtres et la recherche actifs sur la liste principale.`;
+  applyStatsCollapseState();
   buildCoherence(scope);
   renderAnalyseTab(currentAnalyseTab);
   $('#analyse-overlay').classList.add('open');
