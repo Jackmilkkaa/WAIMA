@@ -1370,7 +1370,7 @@ function pill(refObj, value){
 // Seuils de tension Rôle / Score.
 // capitaine/titulaire : plancher seul (signalé si en dessous).
 // remplacant : fenêtre 6.5-7.5 (signalé en dessous ET au-dessus).
-// rotation : plafond d'opportunité seul (signalé si au-dessus, potentiel sous-exploité).
+// rotation : plafond d'opportunité seul (signalé si au-dessus de 8, potentiel sous-exploité).
 // spectateur / transfert / retraite / recrue potentielle : rôles de contexte, jamais de signal.
 function getTension(it){
   if(it.score == null) return null;
@@ -1384,7 +1384,7 @@ function getTension(it){
     if(score < 6.5) return {type:'excess', label:'Remplaçant fragile', detail:`Score ${score.toFixed(1)} — sous la fenêtre Remplaçant (6,5–7,5).`};
     if(score > 7.5) return {type:'potential', label:'Sous-exploité', detail:`Score ${score.toFixed(1)} — au-dessus de la fenêtre Remplaçant, mérite peut-être plus d'usage.`};
   } else if(role === 'rotation'){
-    if(score > 7.5) return {type:'potential', label:'Potentiel sous-exploité', detail:`Score ${score.toFixed(1)} — au niveau Titulaire (≥7,5) mais encore en Rotation.`};
+    if(score > 8) return {type:'potential', label:'Potentiel sous-exploité', detail:`Score ${score.toFixed(1)} — au niveau Titulaire (≥8) mais encore en Rotation.`};
   }
   return null;
 }
