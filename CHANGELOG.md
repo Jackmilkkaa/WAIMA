@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.24.1] - 2026-08-06
+
+### Corrigé
+- **"Scores par rôle" et "Écarts au groupe" ignoraient les rôles masqués par défaut** (Retraité, Recrue potentielle) : ces deux blocs comparent maintenant TOUS les rôles quel que soit le filtre Rôle actif sur la liste principale, tout en respectant les autres filtres (catégorie, marque, recherche…). Un tableau censé comparer les rôles entre eux n'a pas de sens s'il en fait disparaître certains parce qu'ils sont masqués ailleurs dans l'appli.
+
 ## [1.24.0] - 2026-08-06
 
 ### Ajouté
