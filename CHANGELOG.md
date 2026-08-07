@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.25.3] - 2026-08-07
+
+### Ajouté
+- **Lien "Voir les X autres" par famille** dans Associations : les 3 premiers résultats restent affichés par défaut, un clic révèle le reste (tous les tiers, y compris B/C/D) sans limite — utile quand le top 3 n'est pas terrible et qu'il faut voir la suite.
+
 ## [1.25.2] - 2026-08-07
 
 ### Modifié
