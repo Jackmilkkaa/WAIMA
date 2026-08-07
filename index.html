@@ -221,6 +221,28 @@
   .item.expanded .item-detail{display:block;}
   .detail-row{margin-bottom:6px;}
   .detail-row strong{color:var(--text);font-weight:600;}
+  .match-associations{margin-top:4px;}
+  .match-group-label{
+    font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--text-dim);font-weight:600;margin:10px 0 5px;
+  }
+  .match-group-label:first-of-type{margin-top:2px;}
+  .match-row{
+    display:flex;align-items:center;gap:9px;
+    padding:7px 9px;border-radius:8px;
+    background:var(--surface-2);border:1px solid var(--border);
+    margin-bottom:5px;cursor:pointer;
+  }
+  .match-row:hover{border-color:var(--accent);}
+  .match-tier{
+    flex-shrink:0;width:22px;height:22px;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.78rem;color:#1a1610;
+  }
+  .match-text{flex:1;min-width:0;}
+  .match-title{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .match-sub{font-size:.7rem;color:var(--text-dim);}
+  .match-pct{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.82rem;color:var(--text-dim);flex-shrink:0;}
   .item-actions{display:flex;gap:8px;margin-top:14px;}
 
   .empty-state{text-align:center;padding:60px 20px;color:var(--text-faint);}
@@ -1063,6 +1085,7 @@ let rolesRef = [];
 let adnRef = [];
 let scoreEchelle = [];
 let famillesCouleurRef = [];
+let compatCouleursRef = [];
 
 function scoreBand(score){
   if(score === null || score === undefined) return null;
@@ -1084,6 +1107,140 @@ function adnTooltip(a){
   if(!a) return '';
   const parts = [a.registre, adnSignature(a)].filter(Boolean);
   return parts.join(' — ');
+}
+
+// ---------- Matchmaking : compatibilité entre pièces (feature Associations) ----------
+
+// Regroupement des catégories en "familles de tenue" pour le matching croisé.
+// Les Accessoires sont volontairement exclus pour l'instant.
+const OUTFIT_GROUP = {
+  'Chemises': 'Haut', 'Mailles': 'Haut',
+  'Pantalons': 'Bas',
+  'Chaussures': 'Chaussures',
+  'Vestes': 'Veste/Manteau', 'Manteaux': 'Veste/Manteau',
+  'Costumes': 'Costume'
+};
+
+function outfitGroup(it){
+  return it.categorie ? (OUTFIT_GROUP[it.categorie.categorie] || null) : null;
+}
+
+function colorCompatScore(famA, famB){
+  if(!famA || !famB) return 55; // couleur inconnue sur l'une des deux : score neutre
+  const [a, b] = [famA, famB].sort();
+  const row = compatCouleursRef.find(r => r.famille_a === a && r.famille_b === b);
+  return row ? row.score : 55;
+}
+
+function formaliteCompatScore(a, b){
+  if(a.formalite == null || b.formalite == null) return 65;
+  const diff = Math.abs(a.formalite - b.formalite);
+  return Math.max(0, 100 - diff * 28);
+}
+
+function saisonCompatScore(a, b){
+  const sa = a.saison || [], sb = b.saison || [];
+  if(sa.length === 0 || sb.length === 0) return 70; // saison inconnue sur l'une : neutre
+  if(sa.includes('4 saisons') || sb.includes('4 saisons')) return 100;
+  if(sa.some(s => sb.includes(s))) return 100;
+  return 35;
+}
+
+function adnCompatScore(a, b){
+  if(!a.adn_dominant_code || !b.adn_dominant_code) return 55;
+  if(a.adn_dominant_code === b.adn_dominant_code) return 90;
+  if(a.adn_dominant_code === b.adn_secondaire_code || b.adn_dominant_code === a.adn_secondaire_code) return 75;
+  return 55;
+}
+
+function premiumCompatScore(a, b){
+  if(a.premium_percu == null || b.premium_percu == null) return 70;
+  const diff = Math.abs(a.premium_percu - b.premium_percu);
+  return Math.max(0, 100 - diff * 15);
+}
+
+// Score composite 0-100 : couleur (45%), formalité (25%), saison (15%), ADN (10%), gamme perçue (5%).
+function computeMatchScore(a, b){
+  const color = colorCompatScore(a.famille_couleur, b.famille_couleur);
+  const formalite = formaliteCompatScore(a, b);
+  const saison = saisonCompatScore(a, b);
+  const adn = adnCompatScore(a, b);
+  const premium = premiumCompatScore(a, b);
+  return Math.round(color*0.45 + formalite*0.25 + saison*0.15 + adn*0.10 + premium*0.05);
+}
+
+function matchTier(score){
+  if(score >= 85) return { code:'S', label:'Automatisme', couleur:'#2E7D32' };
+  if(score >= 72) return { code:'A', label:'Association solide', couleur:'#689F38' };
+  if(score >= 58) return { code:'B', label:'Ça fonctionne', couleur:'#F9A825' };
+  if(score >= 42) return { code:'C', label:'Jouable, à travailler', couleur:'#EF6C00' };
+  return { code:'D', label:'Décousu', couleur:'#C62828' };
+}
+
+// Meilleurs partenaires d'une pièce, groupés par famille de tenue (hors sa propre famille
+// et hors Accessoires), limités aux pièces actives (hors Retraité / Recrue potentielle).
+function getBestMatches(it, pool, topN = 3){
+  const myGroup = outfitGroup(it);
+  const candidates = pool.filter(other =>
+    other.id !== it.id &&
+    other.role_code !== 'retraite' && other.role_code !== 'recrue_potentielle' &&
+    outfitGroup(other) !== null && outfitGroup(other) !== myGroup
+  );
+  const byGroup = {};
+  candidates.forEach(other => {
+    const g = outfitGroup(other);
+    const score = computeMatchScore(it, other);
+    if(!byGroup[g]) byGroup[g] = [];
+    byGroup[g].push({ item: other, score, tier: matchTier(score) });
+  });
+  Object.values(byGroup).forEach(list => list.sort((x,y) => y.score - x.score));
+  const result = {};
+  Object.keys(byGroup).forEach(g => { result[g] = byGroup[g].slice(0, topN); });
+  return result;
+}
+
+function renderMatchesForItem(id){
+  const container = document.getElementById('match-' + id);
+  if(!container || container.dataset.rendered) return;
+  const it = allItems.find(i => i.id === id);
+  if(!it){ return; }
+
+  const groups = getBestMatches(it, allItems);
+  const GROUP_ORDER = ['Haut', 'Bas', 'Chaussures', 'Veste/Manteau', 'Costume'];
+  const groupOrder = GROUP_ORDER.filter(g => groups[g] && groups[g].length);
+
+  if(groupOrder.length === 0){
+    container.innerHTML = `
+      <div class="coherence-subtitle" style="margin-top:14px;">Associations</div>
+      <div class="tension-empty">Pas assez de pièces dans les autres familles pour proposer un match.</div>`;
+    container.dataset.rendered = '1';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="coherence-subtitle" style="margin-top:14px;">Associations</div>
+    ${groupOrder.map(g => `
+      <div class="match-group-label">${escapeHtml(g)}</div>
+      ${groups[g].map(m => `
+        <div class="match-row" data-id="${escapeHtml(m.item.id)}">
+          <span class="match-tier" style="background:${m.tier.couleur}" title="${escapeHtml(m.tier.label)}">${m.tier.code}</span>
+          <div class="match-text">
+            <div class="match-title">${escapeHtml(m.item.libelle)}</div>
+            <div class="match-sub">${escapeHtml(m.item.marque?.nom || '—')}</div>
+          </div>
+          <div class="match-pct">${m.score}%</div>
+        </div>
+      `).join('')}
+    `).join('')}
+  `;
+  container.dataset.rendered = '1';
+  container.querySelectorAll('.match-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const other = allItems.find(i => i.id === row.dataset.id);
+      if(other) openEditModal(other);
+    });
+  });
 }
 
 async function loadProfile(){
@@ -1184,6 +1341,8 @@ async function loadReferenceData(){
   scoreEchelle = scoreBands || [];
   const { data: familles } = await supabase.from('familles_couleur').select('*');
   famillesCouleurRef = familles || [];
+  const { data: compat } = await supabase.from('compatibilite_couleurs').select('*');
+  compatCouleursRef = compat || [];
   const { data: cats } = await supabase.from('categories').select('*');
   allCategories = cats || [];
   const { data: marques } = await supabase.from('marques').select('*').order('nom');
@@ -1485,6 +1644,7 @@ function render(){
         ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
         <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
         ${it.description_ia ? `<div class="detail-row" style="margin-top:8px;">${escapeHtml(it.description_ia)}</div>` : ''}
+        <div class="match-associations" id="match-${escapeHtml(it.id)}"></div>
         <div class="item-actions">
           <button class="btn-ghost item-edit-btn" data-id="${escapeHtml(it.id)}" style="border-radius:8px;padding:8px 14px;font-size:.8rem;cursor:pointer;">Modifier</button>
           <button class="btn-ghost item-delete-btn" data-id="${escapeHtml(it.id)}" style="border-radius:8px;padding:8px 14px;font-size:.8rem;cursor:pointer;color:#e07a5f;border-color:#5a3a30;">Supprimer</button>
@@ -1494,7 +1654,10 @@ function render(){
   }).join('');
 
   $$('.item').forEach(el => {
-    el.addEventListener('click', () => el.classList.toggle('expanded'));
+    el.addEventListener('click', () => {
+      el.classList.toggle('expanded');
+      if(el.classList.contains('expanded')) renderMatchesForItem(el.dataset.id);
+    });
   });
 
   $$('.item-edit-btn').forEach(btn => {
