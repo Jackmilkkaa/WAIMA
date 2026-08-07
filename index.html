@@ -243,6 +243,12 @@
   .match-title{font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .match-sub{font-size:.7rem;color:var(--text-dim);}
   .match-pct{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:.82rem;color:var(--text-dim);flex-shrink:0;}
+  .match-see-more{
+    display:block;background:none;border:1px dashed var(--border);border-radius:8px;
+    color:var(--accent);font-size:.74rem;padding:6px;width:100%;cursor:pointer;
+    margin-bottom:10px;font-family:inherit;
+  }
+  .match-see-more:hover{border-color:var(--accent);}
   .item-actions{display:flex;gap:8px;margin-top:14px;}
 
   .empty-state{text-align:center;padding:60px 20px;color:var(--text-faint);}
@@ -1179,7 +1185,7 @@ function matchTier(score){
 
 // Meilleurs partenaires d'une pièce, groupés par famille de tenue (hors sa propre famille
 // et hors Accessoires), limités aux pièces actives (hors Retraité / Recrue potentielle).
-function getBestMatches(it, pool, topN = 3){
+function getBestMatches(it, pool){
   const myCategorie = it.categorie ? it.categorie.categorie : null;
   const candidates = pool.filter(other =>
     other.id !== it.id &&
@@ -1195,10 +1201,10 @@ function getBestMatches(it, pool, topN = 3){
     byGroup[g].push({ item: other, score, tier: matchTier(score) });
   });
   Object.values(byGroup).forEach(list => list.sort((x,y) => y.score - x.score));
-  const result = {};
-  Object.keys(byGroup).forEach(g => { result[g] = byGroup[g].slice(0, topN); });
-  return result;
+  return byGroup; // listes complètes, non tronquées — le rendu décide de l'affichage initial
 }
+
+const MATCH_INITIAL_COUNT = 3;
 
 function renderMatchesForItem(id){
   const container = document.getElementById('match-' + id);
@@ -1218,21 +1224,32 @@ function renderMatchesForItem(id){
     return;
   }
 
+  const matchRowHtml = (m, extra) => `
+    <div class="match-row${extra ? ' match-row-extra' : ''}" data-id="${escapeHtml(m.item.id)}" style="${extra ? 'display:none;' : ''}">
+      <span class="match-tier" style="background:${m.tier.couleur}" title="${escapeHtml(m.tier.label)}">${m.tier.code}</span>
+      <div class="match-text">
+        <div class="match-title">${escapeHtml(m.item.libelle)}</div>
+        <div class="match-sub">${escapeHtml(m.item.marque?.nom || '—')} · ${escapeHtml(m.item.categorie?.categorie || '')}</div>
+      </div>
+      <div class="match-pct">${m.score}%</div>
+    </div>`;
+
   container.innerHTML = `
     <div class="coherence-subtitle" style="margin-top:14px;">Associations</div>
-    ${groupOrder.map(g => `
-      <div class="match-group-label">${escapeHtml(g)}</div>
-      ${groups[g].map(m => `
-        <div class="match-row" data-id="${escapeHtml(m.item.id)}">
-          <span class="match-tier" style="background:${m.tier.couleur}" title="${escapeHtml(m.tier.label)}">${m.tier.code}</span>
-          <div class="match-text">
-            <div class="match-title">${escapeHtml(m.item.libelle)}</div>
-            <div class="match-sub">${escapeHtml(m.item.marque?.nom || '—')} · ${escapeHtml(m.item.categorie?.categorie || '')}</div>
-          </div>
-          <div class="match-pct">${m.score}%</div>
-        </div>
-      `).join('')}
-    `).join('')}
+    ${groupOrder.map(g => {
+      const list = groups[g];
+      const groupId = `matchgrp-${escapeHtml(id)}-${g.replace(/[^a-zA-Z0-9]/g, '')}`;
+      const rows = list.map((m, idx) => matchRowHtml(m, idx >= MATCH_INITIAL_COUNT)).join('');
+      const extraCount = list.length - MATCH_INITIAL_COUNT;
+      const seeMoreBtn = extraCount > 0
+        ? `<button type="button" class="match-see-more" data-group-id="${groupId}">Voir les ${extraCount} autre${extraCount>1?'s':''}</button>`
+        : '';
+      return `
+        <div class="match-group-label">${escapeHtml(g)}</div>
+        <div id="${groupId}">${rows}</div>
+        ${seeMoreBtn}
+      `;
+    }).join('')}
   `;
   container.dataset.rendered = '1';
   container.querySelectorAll('.match-row').forEach(row => {
@@ -1240,6 +1257,14 @@ function renderMatchesForItem(id){
       e.stopPropagation();
       const other = allItems.find(i => i.id === row.dataset.id);
       if(other) openEditModal(other);
+    });
+  });
+  container.querySelectorAll('.match-see-more').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const groupEl = document.getElementById(btn.dataset.groupId);
+      groupEl.querySelectorAll('.match-row-extra').forEach(r => { r.style.display = ''; });
+      btn.remove();
     });
   });
 }
