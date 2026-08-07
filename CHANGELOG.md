@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.25.2] - 2026-08-07
+
+### Modifié
+- **Associations repliée par défaut** au sein d'une fiche dépliée — c'est maintenant un second niveau de pli (clic sur "Associations" pour la calculer et l'afficher), plutôt qu'automatique dès qu'on ouvre la fiche.
+
 ## [1.25.1] - 2026-08-07
 
 ### Corrigé
