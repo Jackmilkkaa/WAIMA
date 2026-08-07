@@ -4,6 +4,13 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.25.0] - 2026-08-07
+
+### Ajouté
+- **Feature "Associations" (matchmaking de tenues)** : sur chaque fiche pièce (au clic pour déplier), une nouvelle section propose les meilleures pièces d'autres familles (Haut, Bas, Chaussures, Veste/Manteau, Costume — Accessoires exclus pour l'instant) avec un % de compatibilité et un tier façon foot (S = automatisme, A = association solide, B = ça fonctionne, C = jouable à travailler, D = décousu). Cliquer une association ouvre directement sa fiche.
+- **Nouvelle table `waima.compatibilite_couleurs`** : matrice de compatibilité entre les 11 familles de couleur (66 paires), basée sur les règles classiques du vestiaire masculin (navy+beige fort, marron+noir évité, etc.). Ajustable manuellement en base sans redéploiement.
+- **Score composite de compatibilité** entre deux pièces : couleur (45%), chevauchement de formalité (25%), chevauchement de saison (15%), cohérence ADN dominant/secondaire (10%), écart de gamme perçue (5%). Calculé à la volée au moment où une fiche est dépliée (pas de pré-calcul global, pour rester léger).
+
 ## [1.24.2] - 2026-08-06
 
 ### Corrigé
