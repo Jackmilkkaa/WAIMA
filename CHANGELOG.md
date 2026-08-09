@@ -4,6 +4,15 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.27.3] - 2026-08-07
+
+### Corrigé
+- **ADN dominant/secondaire toujours pas coché malgré la normalisation 1.27.1** : le matching était encore trop strict (comparaison exacte code/libellé après juste trim+minuscule). Remplacé par un matching accent-insensible, article ignoré ("Le Mâle" → "male"), avec un recours en sous-chaîne en dernière instance — beaucoup plus tolérant à ce que Claude renvoie réellement malgré la consigne.
+- **Logs ajoutés côté fonction serveur** (réponse brute de Claude + résultat normalisé) pour diagnostiquer précisément si un cas de figure similaire se reproduit, plutôt que de deviner à l'aveugle.
+
+### Ajouté
+- **ID suggéré automatiquement** après une analyse IA (ex. `PAN-Vert-Decontracte-CT`), en suivant la convention `CAT-Couleur-Type-Marque` déjà en usage. Ne s'applique qu'à l'ajout d'une nouvelle pièce (jamais en édition, le champ ID reste verrouillé) et seulement si le champ est encore vide.
+
 ## [1.27.2] - 2026-08-07
 
 ### Modifié
