@@ -2850,7 +2850,6 @@ const overlay = $('#add-overlay');
 let editingId = null;
 let currentPhotoUrl = null;
 let currentPhotoFit = 'contain';
-let currentPhotoFile = null;
 let allCategories = [];
 let allMarques = [];
 let echelleRef = {};
@@ -2915,35 +2914,24 @@ async function processPendingPhotos(){
   if(uploaded > 0) await loadItems();
 }
 
-$('#f-photo-camera').addEventListener('change', (e) => { currentPhotoFile = e.target.files[0] || null; uploadPhoto(e.target.files[0]); });
-$('#f-photo-gallery').addEventListener('change', (e) => { currentPhotoFile = e.target.files[0] || null; uploadPhoto(e.target.files[0]); });
+$('#f-photo-camera').addEventListener('change', (e) => uploadPhoto(e.target.files[0]));
+$('#f-photo-gallery').addEventListener('change', (e) => uploadPhoto(e.target.files[0]));
 
 // ---------- Analyse IA (Edge Function Supabase -> API Claude) ----------
-function fileToBase64(file){
-  return new Promise((resolve, reject) => {
+// On s'appuie systématiquement sur la photo déjà uploadée (currentPhotoUrl) plutôt que
+// sur le File brut sélectionné : un seul chemin de code, déjà éprouvé pour l'affichage,
+// qu'elle vienne de l'appareil photo, de la galerie, ou d'une pièce en cours d'édition.
+async function getPhotoForAnalysis(){
+  if(!currentPhotoUrl) return null;
+  const res = await fetch(currentPhotoUrl);
+  const blob = await res.blob();
+  const base64 = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result.split(',')[1]);
     reader.onerror = reject;
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(blob);
   });
-}
-
-async function getPhotoForAnalysis(){
-  if(currentPhotoFile){
-    return { base64: await fileToBase64(currentPhotoFile), mimeType: currentPhotoFile.type || 'image/jpeg' };
-  }
-  if(currentPhotoUrl){
-    const res = await fetch(currentPhotoUrl);
-    const blob = await res.blob();
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-    return { base64, mimeType: blob.type || 'image/jpeg' };
-  }
-  return null;
+  return { base64, mimeType: blob.type || 'image/jpeg' };
 }
 
 function applySelectWithNew(selectId, newInputId, value, existingValues){
@@ -2959,6 +2947,11 @@ function applyAiResultToForm(r){
   if(r.matiere) $('#f-matiere').value = r.matiere;
   if(r.texture) $('#f-texture').value = r.texture;
   if(r.description_ia) $('#f-description').value = r.description_ia;
+
+  // Rôle : jamais déductible d'une photo (centralité d'usage, pas une propriété visuelle) —
+  // on pose "Rotation" comme point de départ raisonnable, comme pour une pièce ajoutée
+  // manuellement, plutôt que de laisser le chip vide.
+  setChipGroupValue('f-role-chips', 'f-role', 'rotation');
 
   const catNames = [...new Set(allCategories.map(c => c.categorie))];
   const catExists = r.categorie && catNames.includes(r.categorie);
@@ -3015,7 +3008,7 @@ $('#ai-analyze-btn').addEventListener('click', async () => {
       return;
     }
     applyAiResultToForm(data.result);
-    statusEl.textContent = "Champs pré-remplis par l'IA — vérifie et ajuste avant d'enregistrer. Fréquence/attachement restent à toi.";
+    statusEl.textContent = "Champs pré-remplis par l'IA — vérifie et ajuste avant d'enregistrer. Rôle mis sur Rotation par défaut, fréquence/attachement restent à toi.";
   } catch(err){
     statusEl.textContent = 'Erreur réseau : ' + err.message;
   } finally {
@@ -3119,7 +3112,6 @@ function resetForm(){
   populateSousCategorieOptions('', '');
   setPhoto(null);
   setPhotoFit('contain');
-  currentPhotoFile = null;
   $('#ai-analyze-status').textContent = '';
   $('#add-error').textContent = '';
   $$('#item-form .chips .chip').forEach(c => c.classList.remove('active'));
@@ -3144,7 +3136,6 @@ function openEditModal(it){
   $('#add-error').textContent = '';
   setPhoto(it.photo_url);
   setPhotoFit(it.photo_fit || 'contain');
-  currentPhotoFile = null;
   $('#ai-analyze-status').textContent = '';
 
   $('#f-id').value = it.id;
