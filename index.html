@@ -2953,6 +2953,13 @@ function applyAiResultToForm(r){
   // manuellement, plutôt que de laisser le chip vide.
   setChipGroupValue('f-role-chips', 'f-role', 'rotation');
 
+  // Fréquence et attachement ne sont jamais déduits par l'IA (usage réel propre à la
+  // personne) — mais les laisser vides empêche tout calcul de score. On pose 3/5 par
+  // défaut (valeur neutre, même logique que pour une recrue Mercato) pour qu'un score
+  // provisoire apparaisse tout de suite ; à ajuster une fois la pièce réellement portée.
+  setChipGroupValue('f-frequence-chips', 'f-frequence', 3);
+  setChipGroupValue('f-attachement-chips', 'f-attachement', 3);
+
   const catNames = [...new Set(allCategories.map(c => c.categorie))];
   const catExists = r.categorie && catNames.includes(r.categorie);
   applySelectWithNew('f-categorie', 'f-categorie-new', r.categorie, catNames);
@@ -3008,7 +3015,7 @@ $('#ai-analyze-btn').addEventListener('click', async () => {
       return;
     }
     applyAiResultToForm(data.result);
-    statusEl.textContent = "Champs pré-remplis par l'IA — vérifie et ajuste avant d'enregistrer. Rôle mis sur Rotation par défaut, fréquence/attachement restent à toi.";
+    statusEl.textContent = "Champs pré-remplis par l'IA — vérifie et ajuste avant d'enregistrer. Rôle (Rotation) et fréquence/attachement (3/5) sont des valeurs par défaut provisoires : le score affiché va bouger une fois que tu les ajustes à l'usage réel.";
   } catch(err){
     statusEl.textContent = 'Erreur réseau : ' + err.message;
   } finally {
