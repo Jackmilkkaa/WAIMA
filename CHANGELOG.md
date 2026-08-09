@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.26.1] - 2026-08-07
+
+### Corrigé
+- **Bug de positionnement dans la visite guidée après l'étape "Rôle"** : l'ordre des étapes ne suivait pas l'ordre réel du formulaire (elle sautait au bloc ADN plus bas, puis remontait à Formalité juste après) — provoquait un aller-retour de scroll trop rapide pour le délai fixe utilisé, désynchronisant le cadre de surlignage. Deux corrections : l'ordre des étapes suit maintenant l'ordre réel du formulaire (Rôle → Formalité → Fréquence/Attachement → ADN dominant), et le scroll vers chaque champ est instantané plutôt qu'animé — élimine la dépendance à un délai deviné pour positionner le cadre correctement.
+
 ## [1.26.0] - 2026-08-07
 
 ### Ajouté
