@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.27.2] - 2026-08-07
+
+### Modifié
+- **Fréquence et attachement à 3/5 par défaut après analyse IA**, plutôt que vides — un score provisoire se calcule immédiatement (au lieu de rester absent tant que ces deux champs ne sont pas remplis manuellement), à ajuster une fois la pièce réellement portée.
+
 ## [1.27.1] - 2026-08-07
 
 ### Corrigé
