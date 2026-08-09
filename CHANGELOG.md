@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.27.5] - 2026-08-07
+
+### Corrigé
+- **Bug racine identifié et corrigé** : la fonction serveur se connectait à Supabase sans préciser le schéma `waima` (contrairement au frontend qui le fait explicitement) — elle cherchait donc les tables `adn`, `categories`, `registres_style` dans le schéma `public`, vide. Résultat : la liste des codes ADN valides arrivait vide côté serveur, rendant la contrainte `enum` (ajoutée en 1.27.4) inopérante — Claude produisait alors un code ADN qui ne correspondait à aucune vraie valeur, d'où les chips jamais cochés malgré l'intensité correctement renseignée. Ajout de `db: { schema: 'waima' }` au client Supabase de la fonction.
+- Garde-fou ajouté : un log d'erreur explicite se déclenche désormais si la liste des codes ADN arrive vide en base, pour repérer ce type de problème immédiatement plutôt qu'après plusieurs tentatives.
+
 ## [1.27.4] - 2026-08-07
 
 ### Corrigé
