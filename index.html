@@ -2942,6 +2942,7 @@ function applySelectWithNew(selectId, newInputId, value, existingValues){
 }
 
 function applyAiResultToForm(r){
+  if(r.id_suggere && !editingId && !$('#f-id').value.trim()) $('#f-id').value = r.id_suggere;
   if(r.libelle) $('#f-libelle').value = r.libelle;
   if(r.couleur_principale) $('#f-couleur').value = r.couleur_principale;
   if(r.matiere) $('#f-matiere').value = r.matiere;
