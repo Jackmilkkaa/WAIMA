@@ -947,6 +947,7 @@
       <div class="filter-block">
         <label class="filter-label" for="f-categorie">Catégorie</label>
         <select id="f-categorie"><option value="">—</option></select>
+        <input type="text" id="f-categorie-new" placeholder="Nouvelle catégorie…" style="display:none;margin-top:6px;">
       </div>
       <div class="filter-block">
         <label class="filter-label" for="f-souscategorie">Sous-catégorie</label>
@@ -2547,7 +2548,9 @@ function populateFormReferenceData(){
   });
 
   const catNames = [...new Set(allCategories.map(c => c.categorie))].sort();
-  populateSelect($('#f-categorie'), catNames.map(c => ({value:c, label:c})), '—');
+  const catOpts = catNames.map(c => ({value:c, label:c}));
+  catOpts.push({value:'__new__', label:'+ Nouvelle catégorie…'});
+  populateSelect($('#f-categorie'), catOpts, '—');
 
   const marqueOpts = allMarques.map(m => ({value:m.nom, label:m.nom}));
   marqueOpts.push({value:'__new__', label:'+ Nouvelle marque…'});
@@ -2567,7 +2570,11 @@ function populateSousCategorieOptions(categorieName, selectedValue){
   $('#f-souscategorie-new').style.display = 'none';
 }
 
-$('#f-categorie').addEventListener('change', () => populateSousCategorieOptions($('#f-categorie').value, ''));
+$('#f-categorie').addEventListener('change', () => {
+  $('#f-categorie-new').style.display = $('#f-categorie').value === '__new__' ? 'block' : 'none';
+  const catForSub = $('#f-categorie').value === '__new__' ? '' : $('#f-categorie').value;
+  populateSousCategorieOptions(catForSub, '');
+});
 $('#f-souscategorie').addEventListener('change', () => {
   $('#f-souscategorie-new').style.display = $('#f-souscategorie').value === '__new__' ? 'block' : 'none';
 });
@@ -2578,6 +2585,7 @@ $('#f-marque').addEventListener('change', () => {
 function resetForm(){
   $('#item-form').reset();
   $('#f-id').disabled = false;
+  $('#f-categorie-new').style.display = 'none';
   $('#f-souscategorie-new').style.display = 'none';
   $('#f-marque-new').style.display = 'none';
   populateSousCategorieOptions('', '');
@@ -2648,7 +2656,8 @@ function openEditModal(it){
 }
 
 async function resolveCategorieId(){
-  const categorie = $('#f-categorie').value;
+  let categorie = $('#f-categorie').value;
+  if(categorie === '__new__') categorie = $('#f-categorie-new').value.trim();
   if(!categorie) return null;
   let sousCategorie = $('#f-souscategorie').value;
   if(sousCategorie === '__new__') sousCategorie = $('#f-souscategorie-new').value.trim();
