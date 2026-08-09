@@ -4,6 +4,14 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.27.1] - 2026-08-07
+
+### Corrigé
+- **Photo depuis la galerie ne fonctionnait pas avec l'analyse IA** : le bouton reposait sur le fichier brut sélectionné, chemin de code fragile selon le picker Android utilisé. Unifié sur la photo déjà uploadée (`currentPhotoUrl`), le même chemin déjà éprouvé pour l'affichage — fonctionne pareil que la photo vienne de l'appareil photo, de la galerie, ou d'une pièce en cours d'édition.
+- **Rôle jamais coché après analyse IA** : normal, ce n'est pas déductible d'une photo (comme fréquence/attachement) — mais laissé vide c'était plus gênant qu'utile. Mis sur "Rotation" par défaut désormais, comme pour une nouvelle pièce ajoutée manuellement.
+- **ADN dominant/secondaire pas cochés** : Claude ne respectait pas toujours exactement le code attendu (ex. libellé complet au lieu du code technique). Ajout d'une couche de normalisation côté fonction serveur (`smart-endpoint`) qui valide/corrige texture, saison, codes ADN et clamp les échelles numériques avant de renvoyer le résultat à l'appli — protège aussi contre de futures dérives similaires sur les autres champs.
+- **Description IA générique** : ajout d'un gabarit et d'un exemple réel dans le prompt pour que le texte généré suive le style des fiches existantes (matière/construction → registre ADN → lien avec le reste de la garde-robe → suggestion d'usage).
+
 ## [1.27.0] - 2026-08-07
 
 ### Ajouté
