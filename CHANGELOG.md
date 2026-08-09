@@ -4,6 +4,19 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.26.0] - 2026-08-07
+
+### Ajouté
+- **Onboarding complet**, déclenché automatiquement à la première connexion (basé sur `profiles.onboarding_complete`), rejouable à tout moment via un bouton "Relancer le tutoriel" dans Profil :
+  - Étape 1 : prénom/nom (`profiles.prenom`, `profiles.nom`)
+  - Étape 2 : philosophie Waïma (anti-accumulation, système évolutif)
+  - Étape 3 : choix du profil homme/femme (existant, intégré au parcours)
+  - Étape 4 : **registres de style personnels** — nouvelle table `waima.registres_style` (libellé + description, par utilisateur), distincte de l'ADN par pièce, éditable en ajoutant/retirant des lignes ; affichée en lecture dans Profil
+  - Étape 5 : explication du système (rôles façon foot, score, cohérence)
+  - Étape 6 : lancement optionnel d'une **visite guidée** du formulaire d'ajout, pièce réelle à la clé
+- **Visite guidée maison** (surlignage + bulle d'explication positionnée sur le vrai champ, sans dépendance externe type Shepherd/Intro.js — implémentation légère cohérente avec le thème sombre de l'appli) : 8 étapes sur le formulaire (libellé, catégorie, prix, rôle, ADN dominant, formalité, fréquence/attachement, enregistrement). Navigable (précédent/suivant/terminer), saute proprement une étape si le champ ciblé n'est pas trouvé.
+- **Compte de Lionel pré-marqué comme onboardé** (projet déjà mature) avec ses 4 registres de style déjà connus pré-remplis (Business contemporain structuré, British texturé, Élégance italienne lumineuse, Minimalisme premium moderne) — pas de tutoriel forcé au prochain chargement, mais rejouable s'il le souhaite.
+
 ## [1.25.5] - 2026-08-07
 
 ### Ajouté
