@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.27.4] - 2026-08-07
+
+### Corrigé
+- **ADN toujours pas coché malgré deux tentatives de normalisation côté serveur (1.27.1, 1.27.3)** : abandon de l'approche "demander du JSON en texte libre puis deviner ce que Claude a voulu dire". Passage au **tool calling** de l'API Claude avec schéma strict (`enum` sur les codes ADN, texture, saison, `minimum`/`maximum` sur les échelles numériques) — l'API elle-même contraint la réponse à respecter le schéma, il n'y a plus de place pour qu'une variante mal formée ("Le Mâle" au lieu de "male") passe entre les mailles. Le format de réponse renvoyé à l'appli ne change pas, donc aucune modification frontend nécessaire.
+- Logs enrichis avec la réponse Claude complète (pas seulement le JSON extrait) pour diagnostiquer plus vite en cas de nouveau souci.
+
 ## [1.27.3] - 2026-08-07
 
 ### Corrigé
