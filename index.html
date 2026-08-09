@@ -1752,8 +1752,8 @@ function renderTourStepUI(){
   const step = tourState.steps[tourState.idx];
   const target = document.querySelector(step.selector);
   if(!target){ tourNext(); return; }
-  target.scrollIntoView({ behavior:'smooth', block:'center' });
-  setTimeout(() => positionTourStep(target, step), 260);
+  target.scrollIntoView({ behavior:'auto', block:'center' });
+  positionTourStep(target, step);
 }
 
 function startTour(steps){
@@ -1767,9 +1767,9 @@ function startFormTour(){
     { selector:'#f-categorie', title:'Catégorie', text:"Choisis la famille de la pièce. Tu peux créer une nouvelle catégorie ou sous-catégorie directement ici si besoin." },
     { selector:'#f-prix', title:"Prix d'achat", text:"Optionnel, mais utile pour suivre ton budget dans le temps." },
     { selector:'#f-role-chips', title:'Le rôle', text:"Capitaine, Titulaire, Rotation... reflète l'usage réel, pas juste la qualité perçue." },
-    { selector:'#f-adn-dom-chips', title:'ADN dominant', text:"Le registre stylistique principal de la pièce, parmi 6 archétypes." },
     { selector:'#f-formalite-chips', title:'Formalité', text:"De Ultra casual à Business strict — détermine dans quels contextes la pièce est portable." },
     { selector:'#f-frequence-chips', title:'Fréquence & attachement', text:"Ton usage réel et ton ressenti — ces deux champs pèsent fort dans le calcul du score." },
+    { selector:'#f-adn-dom-chips', title:'ADN dominant', text:"Le registre stylistique principal de la pièce, parmi 6 archétypes." },
     { selector:'#add-submit', title:'Et voilà', text:"Une fois les champs remplis, Waïma calcule le score automatiquement. Tu peux toujours revenir modifier une fiche plus tard." }
   ]);
 }
