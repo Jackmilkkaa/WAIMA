@@ -566,6 +566,61 @@
   }
   #changelog-body ul{margin:0 0 4px;padding-left:18px;}
   #changelog-body li{margin-bottom:3px;}
+
+  /* ---------- Onboarding ---------- */
+  .onboarding-progress{display:flex;gap:6px;justify-content:center;margin-bottom:18px;}
+  .onboarding-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background .2s;}
+  .onboarding-dot.active{background:var(--accent);width:20px;border-radius:4px;}
+  .onboarding-dot.done{background:var(--text-dim);}
+  #onboarding-body{min-height:280px;}
+  #onboarding-body h2{font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:1.3rem;margin:0 0 10px;}
+  #onboarding-body p{color:var(--text-dim);font-size:.88rem;line-height:1.5;margin:0 0 14px;}
+  #onboarding-body .field-block{margin-bottom:14px;}
+  #onboarding-body label{display:block;font-size:.78rem;color:var(--text-dim);margin-bottom:5px;}
+  #onboarding-body input[type="text"]{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;
+    padding:10px 12px;color:var(--text);font-family:inherit;font-size:.9rem;
+  }
+  .onboarding-nav{display:flex;align-items:center;gap:10px;margin-top:20px;border-top:1px solid var(--border);padding-top:16px;}
+  .onboarding-nav .btn, .onboarding-nav .btn-ghost{width:auto;flex:none;}
+  .onboarding-explainer-card{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;margin-bottom:10px;
+  }
+  .onboarding-explainer-card h4{margin:0 0 4px;font-size:.85rem;color:var(--accent);}
+  .onboarding-explainer-card p{margin:0;font-size:.8rem;}
+  .registre-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;}
+  .registre-row input{flex:1;}
+  .registre-remove{
+    flex-shrink:0;background:none;border:1px solid var(--border);border-radius:8px;
+    color:var(--text-dim);width:38px;height:38px;cursor:pointer;font-size:1rem;
+  }
+  .registre-remove:hover{border-color:#C62828;color:#C62828;}
+  .registre-add-btn{
+    background:none;border:1px dashed var(--border);border-radius:8px;
+    color:var(--accent);font-size:.8rem;padding:8px;width:100%;cursor:pointer;font-family:inherit;
+  }
+
+  /* Visite guidée maison (highlight + bulle) */
+  .tour-highlight{
+    position:fixed;border-radius:10px;pointer-events:none;z-index:210;
+    box-shadow:0 0 0 9999px rgba(10,9,6,.78);border:2px solid var(--accent);
+    transition:top .25s,left .25s,width .25s,height .25s;
+  }
+  .tour-tooltip{
+    position:fixed;background:var(--surface);border:1px solid var(--accent);border-radius:10px;
+    padding:14px;max-width:270px;z-index:211;box-shadow:0 8px 24px rgba(0,0,0,.4);
+  }
+  .tour-tooltip h4{margin:0 0 6px;font-family:'Fraunces',serif;font-style:italic;font-size:1rem;}
+  .tour-tooltip p{margin:0 0 12px;font-size:.8rem;color:var(--text-dim);line-height:1.4;}
+  .tour-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .tour-step-count{font-size:.68rem;color:var(--text-faint);}
+  .tour-nav-btns{display:flex;gap:6px;}
+  .tour-btn{
+    background:var(--accent);border:none;border-radius:6px;color:#1a1610;
+    font-size:.76rem;font-weight:600;padding:5px 11px;cursor:pointer;font-family:inherit;
+  }
+  .tour-btn.ghost{background:none;border:1px solid var(--border);color:var(--text-dim);}
 </style>
 </head>
 <body>
@@ -732,6 +787,11 @@
         <button type="button" data-profil="femme"><span>♀</span> Femme</button>
       </div>
     </div>
+    <div class="analyse-section-title" style="font-size:.9rem;margin-top:20px;">Registres de style</div>
+    <div id="profile-registres-list" style="margin-bottom:10px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="replay-onboarding">Relancer le tutoriel</button>
+    </div>
   </div>
 </div>
 
@@ -878,6 +938,18 @@
 
     </div>
 
+  </div>
+</div>
+
+<div class="modal-overlay" id="onboarding-overlay">
+  <div class="modal modal-large" id="onboarding-modal">
+    <div class="onboarding-progress" id="onboarding-progress"></div>
+    <div id="onboarding-body"></div>
+    <div class="onboarding-nav">
+      <button class="btn btn-ghost" id="onboarding-back" style="display:none;">← Précédent</button>
+      <button class="btn-ghost" id="onboarding-skip" style="margin-left:auto;">Passer le tutoriel</button>
+      <button class="btn" id="onboarding-next">Suivant</button>
+    </div>
   </div>
 </div>
 
@@ -1271,15 +1343,28 @@ function renderMatchesForItem(id){
   });
 }
 
+let currentPrenom = '';
+let currentNom = '';
+let onboardingComplete = true;
+let registresStyleRef = [];
+
 async function loadProfile(){
   const { data, error } = await supabase.from('profiles').select('*').eq('user_id', currentUserId).maybeSingle();
   if(data){
     currentProfil = data.profil;
+    currentPrenom = data.prenom || '';
+    currentNom = data.nom || '';
+    onboardingComplete = !!data.onboarding_complete;
   } else {
     // Première connexion : pas de ligne encore, on en crée une par défaut
-    await supabase.from('profiles').insert({ user_id: currentUserId, profil: 'homme' });
+    await supabase.from('profiles').insert({ user_id: currentUserId, profil: 'homme', onboarding_complete: false });
     currentProfil = 'homme';
+    currentPrenom = '';
+    currentNom = '';
+    onboardingComplete = false;
   }
+  const { data: registres } = await supabase.from('registres_style').select('*').eq('user_id', currentUserId).order('ordre');
+  registresStyleRef = registres || [];
 }
 
 async function checkSession(){
@@ -1294,7 +1379,9 @@ function showLogin(){
 function showApp(){
   $('#login-view').style.display = 'none';
   $('#app-view').style.display = 'block';
-  loadProfile().then(() => loadReferenceData().then(loadItems).then(processPendingPhotos));
+  loadProfile().then(() => loadReferenceData().then(loadItems).then(processPendingPhotos).then(() => {
+    if(!onboardingComplete) startOnboarding();
+  }));
   updateVersionFooter();
 }
 
@@ -1341,6 +1428,7 @@ $('#signout-btn').addEventListener('click', async () => {
 
 $('#open-profile').addEventListener('click', () => {
   $$('#profil-toggle button').forEach(b => b.classList.toggle('active', b.dataset.profil === currentProfil));
+  renderProfileRegistresList();
   $('#profile-overlay').classList.add('open');
 });
 $('#profile-close-x').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
@@ -1353,6 +1441,338 @@ $$('#profil-toggle button').forEach(b => b.addEventListener('click', async () =>
   populateFormReferenceData();
   render();
 }));
+
+function renderProfileRegistresList(){
+  const container = $('#profile-registres-list');
+  if(!container) return;
+  if(registresStyleRef.length === 0){
+    container.innerHTML = `<p class="hint" style="margin:0;">Aucun registre défini — relance le tutoriel pour en ajouter.</p>`;
+    return;
+  }
+  container.innerHTML = registresStyleRef.map(r => `
+    <div class="onboarding-explainer-card">
+      <h4>${escapeHtml(r.libelle)}</h4>
+      ${r.description ? `<p>${escapeHtml(r.description)}</p>` : ''}
+    </div>
+  `).join('');
+}
+
+// ---------- Onboarding ----------
+const ONBOARDING_STEPS = ['welcome', 'philosophy', 'profil', 'registres', 'systeme', 'tour'];
+let onboardingStepIndex = 0;
+let onboardingDraft = { prenom:'', nom:'', profil:'homme', registres:[] };
+
+function renderWelcomeStep(){
+  return `
+    <h2>Bienvenue dans Waïma</h2>
+    <p>Waïma n'est pas un catalogue de vêtements — c'est un système de pilotage de garde-robe : rôles, scores, ADN, alertes de cohérence. Quelques minutes pour le prendre en main.</p>
+    <div class="field-block">
+      <label for="ob-prenom">Prénom</label>
+      <input type="text" id="ob-prenom" value="${escapeHtml(onboardingDraft.prenom)}">
+    </div>
+    <div class="field-block">
+      <label for="ob-nom">Nom</label>
+      <input type="text" id="ob-nom" value="${escapeHtml(onboardingDraft.nom)}">
+    </div>
+  `;
+}
+
+function renderPhilosophyStep(){
+  return `
+    <h2>Pourquoi Waïma</h2>
+    <p>Chaque pièce doit justifier sa place. Pas "est-ce qu'elle me plaît", mais "est-ce qu'elle améliore le système global".</p>
+    <div class="onboarding-explainer-card">
+      <h4>Anti-accumulation</h4>
+      <p>Avant un achat, Waïma challenge : redondance, polyvalence, budget, cohérence avec l'existant.</p>
+    </div>
+    <div class="onboarding-explainer-card">
+      <h4>Rien n'est figé</h4>
+      <p>Rôles et scores évoluent avec ton usage réel. Une pièce peut monter, descendre, sortir — Waïma le détecte, toi tu décides.</p>
+    </div>
+  `;
+}
+
+function renderProfilStep(){
+  return `
+    <h2>Homme ou Femme</h2>
+    <p>Détermine le vocabulaire de l'ADN dominant affiché sur chaque pièce (les 6 archétypes existent dans les deux versions). Le reste de l'appli est partagé.</p>
+    <div class="profil-switch">
+      <div class="profil-switch-track" id="ob-profil-toggle">
+        <button type="button" data-profil="homme"><span>♂</span> Homme</button>
+        <button type="button" data-profil="femme"><span>♀</span> Femme</button>
+      </div>
+    </div>
+  `;
+}
+function bindProfilStep(){
+  $$('#ob-profil-toggle button').forEach(b => {
+    b.classList.toggle('active', b.dataset.profil === onboardingDraft.profil);
+    b.addEventListener('click', () => {
+      onboardingDraft.profil = b.dataset.profil;
+      $$('#ob-profil-toggle button').forEach(btn => btn.classList.toggle('active', btn.dataset.profil === onboardingDraft.profil));
+    });
+  });
+}
+
+function registreRowHtml(r, i){
+  return `
+    <div class="registre-row" data-idx="${i}">
+      <div style="flex:1;">
+        <input type="text" class="registre-libelle" placeholder="Nom du registre (ex. British texturé)" value="${escapeHtml(r.libelle || '')}" style="margin-bottom:5px;">
+        <input type="text" class="registre-desc" placeholder="Description courte (optionnel)" value="${escapeHtml(r.description || '')}">
+      </div>
+      <button type="button" class="registre-remove" data-idx="${i}" title="Retirer">✕</button>
+    </div>`;
+}
+function renderRegistresStep(){
+  const rows = onboardingDraft.registres.length ? onboardingDraft.registres : [{libelle:'', description:''}];
+  return `
+    <h2>Tes registres de style</h2>
+    <p>Au-delà de l'ADN par pièce, définis 2 à 4 registres qui décrivent ton style global — Waïma s'en sert comme contexte pour mieux estimer tes pièces. Optionnel, ajustable à tout moment depuis Profil.</p>
+    <div id="registres-rows">${rows.map((r,i) => registreRowHtml(r,i)).join('')}</div>
+    <button type="button" class="registre-add-btn" id="registre-add">+ Ajouter un registre</button>
+  `;
+}
+function captureRegistresFromDom(){
+  onboardingDraft.registres = $$('#registres-rows .registre-row').map(row => ({
+    libelle: row.querySelector('.registre-libelle').value.trim(),
+    description: row.querySelector('.registre-desc').value.trim()
+  }));
+}
+function bindRegistresStep(){
+  $('#registre-add').addEventListener('click', () => {
+    captureRegistresFromDom();
+    onboardingDraft.registres.push({libelle:'', description:''});
+    renderOnboardingStep();
+  });
+  $$('.registre-remove').forEach(btn => btn.addEventListener('click', () => {
+    captureRegistresFromDom();
+    onboardingDraft.registres.splice(parseInt(btn.dataset.idx), 1);
+    renderOnboardingStep();
+  }));
+}
+
+function renderSystemeStep(){
+  return `
+    <h2>Comment lire Waïma</h2>
+    <div class="onboarding-explainer-card">
+      <h4>Les rôles, façon foot</h4>
+      <p>Capitaine, Titulaire, Rotation, Remplaçant, Transfert, Spectateur, Retraité, Recrue potentielle — la centralité réelle d'une pièce dans ton usage, pas juste sa qualité.</p>
+    </div>
+    <div class="onboarding-explainer-card">
+      <h4>Le score</h4>
+      <p>Une note sur 10 calculée à partir de la polyvalence, la qualité perçue, la fréquence de port et l'attachement.</p>
+    </div>
+    <div class="onboarding-explainer-card">
+      <h4>Cohérence</h4>
+      <p>Waïma détecte les tensions rôle/score, les désaccords score/usage réel, et l'équilibre global de ton effectif — dans Analyse.</p>
+    </div>
+  `;
+}
+
+function renderTourStep(){
+  return `
+    <h2>À toi de jouer</h2>
+    <p>La meilleure façon de comprendre Waïma, c'est d'ajouter une vraie pièce. On peut le faire ensemble, champ par champ.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
+      <button type="button" class="btn" id="ob-start-tour">Créer ma première pièce (visite guidée)</button>
+      <button type="button" class="btn-ghost" id="ob-finish-plain">Terminer sans créer de pièce maintenant</button>
+    </div>
+  `;
+}
+function bindTourStep(){
+  $('#ob-start-tour').addEventListener('click', async () => {
+    await finishOnboarding();
+    $('#onboarding-overlay').classList.remove('open');
+    $('#add-fab').click();
+    setTimeout(startFormTour, 350);
+  });
+  $('#ob-finish-plain').addEventListener('click', async () => {
+    await finishOnboarding();
+    $('#onboarding-overlay').classList.remove('open');
+  });
+}
+
+const ONBOARDING_RENDER = { welcome:renderWelcomeStep, philosophy:renderPhilosophyStep, profil:renderProfilStep, registres:renderRegistresStep, systeme:renderSystemeStep, tour:renderTourStep };
+const ONBOARDING_BIND = { profil:bindProfilStep, registres:bindRegistresStep, tour:bindTourStep };
+
+function updateOnboardingNav(){
+  const idx = onboardingStepIndex;
+  const isLast = idx === ONBOARDING_STEPS.length - 1;
+  $('#onboarding-back').style.display = idx === 0 ? 'none' : '';
+  $('#onboarding-skip').style.display = isLast ? 'none' : '';
+  $('#onboarding-next').style.display = isLast ? 'none' : '';
+  $('#onboarding-progress').innerHTML = ONBOARDING_STEPS.map((s,i) =>
+    `<span class="onboarding-dot ${i===idx?'active':(i<idx?'done':'')}"></span>`
+  ).join('');
+}
+
+function renderOnboardingStep(){
+  const step = ONBOARDING_STEPS[onboardingStepIndex];
+  $('#onboarding-body').innerHTML = ONBOARDING_RENDER[step]();
+  if(ONBOARDING_BIND[step]) ONBOARDING_BIND[step]();
+  updateOnboardingNav();
+}
+
+function captureStepData(step){
+  if(step === 'welcome'){
+    onboardingDraft.prenom = $('#ob-prenom')?.value.trim() || '';
+    onboardingDraft.nom = $('#ob-nom')?.value.trim() || '';
+  } else if(step === 'registres'){
+    captureRegistresFromDom();
+  }
+}
+
+async function finishOnboarding(){
+  captureStepData(ONBOARDING_STEPS[onboardingStepIndex]);
+  currentPrenom = onboardingDraft.prenom;
+  currentNom = onboardingDraft.nom;
+  currentProfil = onboardingDraft.profil;
+  onboardingComplete = true;
+
+  await supabase.from('profiles').update({
+    prenom: currentPrenom || null,
+    nom: currentNom || null,
+    profil: currentProfil,
+    onboarding_complete: true,
+    updated_at: new Date().toISOString()
+  }).eq('user_id', currentUserId);
+
+  await supabase.from('registres_style').delete().eq('user_id', currentUserId);
+  const rows = onboardingDraft.registres.filter(r => r.libelle);
+  if(rows.length){
+    const { data } = await supabase.from('registres_style').insert(
+      rows.map((r,i) => ({ user_id: currentUserId, libelle: r.libelle, description: r.description || null, ordre: i+1 }))
+    ).select('*');
+    registresStyleRef = data || [];
+  } else {
+    registresStyleRef = [];
+  }
+
+  $$('#profil-toggle button').forEach(b => b.classList.toggle('active', b.dataset.profil === currentProfil));
+  renderProfileRegistresList();
+  await loadReferenceData();
+  populateFormReferenceData();
+  render();
+}
+
+function startOnboarding(){
+  onboardingStepIndex = 0;
+  onboardingDraft = {
+    prenom: currentPrenom,
+    nom: currentNom,
+    profil: currentProfil,
+    registres: registresStyleRef.map(r => ({ libelle:r.libelle, description:r.description || '' }))
+  };
+  renderOnboardingStep();
+  $('#onboarding-overlay').classList.add('open');
+}
+
+$('#onboarding-next').addEventListener('click', () => {
+  captureStepData(ONBOARDING_STEPS[onboardingStepIndex]);
+  onboardingStepIndex++;
+  renderOnboardingStep();
+});
+$('#onboarding-back').addEventListener('click', () => {
+  captureStepData(ONBOARDING_STEPS[onboardingStepIndex]);
+  onboardingStepIndex--;
+  renderOnboardingStep();
+});
+$('#onboarding-skip').addEventListener('click', async () => {
+  captureStepData(ONBOARDING_STEPS[onboardingStepIndex]);
+  await finishOnboarding();
+  $('#onboarding-overlay').classList.remove('open');
+});
+$('#replay-onboarding').addEventListener('click', () => {
+  $('#profile-overlay').classList.remove('open');
+  startOnboarding();
+});
+
+// ---------- Visite guidée maison (highlight + bulle), réutilisable ----------
+let tourState = null;
+
+function endTour(){
+  document.querySelectorAll('.tour-highlight, .tour-tooltip').forEach(el => el.remove());
+  tourState = null;
+}
+
+function tourNext(){
+  if(tourState.idx >= tourState.steps.length - 1){ endTour(); return; }
+  tourState.idx++;
+  renderTourStepUI();
+}
+function tourPrev(){
+  tourState.idx--;
+  renderTourStepUI();
+}
+
+function positionTourStep(target, step){
+  const rect = target.getBoundingClientRect();
+  const pad = 6;
+  const highlight = document.createElement('div');
+  highlight.className = 'tour-highlight';
+  highlight.style.top = (rect.top - pad) + 'px';
+  highlight.style.left = (rect.left - pad) + 'px';
+  highlight.style.width = (rect.width + pad*2) + 'px';
+  highlight.style.height = (rect.height + pad*2) + 'px';
+  document.body.appendChild(highlight);
+
+  const tooltip = document.createElement('div');
+  tooltip.className = 'tour-tooltip';
+  const isLast = tourState.idx === tourState.steps.length - 1;
+  tooltip.innerHTML = `
+    <h4>${escapeHtml(step.title)}</h4>
+    <p>${escapeHtml(step.text)}</p>
+    <div class="tour-nav">
+      <span class="tour-step-count">${tourState.idx+1} / ${tourState.steps.length}</span>
+      <div class="tour-nav-btns">
+        ${tourState.idx > 0 ? `<button type="button" class="tour-btn ghost" id="tour-prev">Précédent</button>` : ''}
+        <button type="button" class="tour-btn ghost" id="tour-end">Terminer</button>
+        <button type="button" class="tour-btn" id="tour-next">${isLast ? 'Fini !' : 'Suivant'}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(tooltip);
+
+  const ttRect = tooltip.getBoundingClientRect();
+  let top = rect.bottom + 12;
+  if(top + ttRect.height > window.innerHeight - 10) top = Math.max(10, rect.top - ttRect.height - 12);
+  let left = Math.min(Math.max(10, rect.left), window.innerWidth - ttRect.width - 10);
+  tooltip.style.top = top + 'px';
+  tooltip.style.left = left + 'px';
+
+  $('#tour-next').addEventListener('click', tourNext);
+  const prevBtn = document.getElementById('tour-prev');
+  if(prevBtn) prevBtn.addEventListener('click', tourPrev);
+  $('#tour-end').addEventListener('click', endTour);
+}
+
+function renderTourStepUI(){
+  document.querySelectorAll('.tour-highlight, .tour-tooltip').forEach(el => el.remove());
+  const step = tourState.steps[tourState.idx];
+  const target = document.querySelector(step.selector);
+  if(!target){ tourNext(); return; }
+  target.scrollIntoView({ behavior:'smooth', block:'center' });
+  setTimeout(() => positionTourStep(target, step), 260);
+}
+
+function startTour(steps){
+  tourState = { steps, idx:0 };
+  renderTourStepUI();
+}
+
+function startFormTour(){
+  startTour([
+    { selector:'#f-libelle', title:'Le libellé', text:"Un nom descriptif clair — tu le retrouveras dans toutes les listes et les graphiques." },
+    { selector:'#f-categorie', title:'Catégorie', text:"Choisis la famille de la pièce. Tu peux créer une nouvelle catégorie ou sous-catégorie directement ici si besoin." },
+    { selector:'#f-prix', title:"Prix d'achat", text:"Optionnel, mais utile pour suivre ton budget dans le temps." },
+    { selector:'#f-role-chips', title:'Le rôle', text:"Capitaine, Titulaire, Rotation... reflète l'usage réel, pas juste la qualité perçue." },
+    { selector:'#f-adn-dom-chips', title:'ADN dominant', text:"Le registre stylistique principal de la pièce, parmi 6 archétypes." },
+    { selector:'#f-formalite-chips', title:'Formalité', text:"De Ultra casual à Business strict — détermine dans quels contextes la pièce est portable." },
+    { selector:'#f-frequence-chips', title:'Fréquence & attachement', text:"Ton usage réel et ton ressenti — ces deux champs pèsent fort dans le calcul du score." },
+    { selector:'#add-submit', title:'Et voilà', text:"Une fois les champs remplis, Waïma calcule le score automatiquement. Tu peux toujours revenir modifier une fiche plus tard." }
+  ]);
+}
 
 async function loadReferenceData(){
   const { data: roles } = await supabase.from('roles').select('*').order('ordre');
