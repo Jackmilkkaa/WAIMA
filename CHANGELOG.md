@@ -4,6 +4,15 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.27.0] - 2026-08-07
+
+### Ajouté
+- **Feature 2 — Analyse IA embarquée** : bouton "✨ Analyser avec l'IA" dans le formulaire d'ajout, sous la zone photo.
+  - **Backend** : nouvelle Edge Function Supabase (`smart-endpoint`, déployée manuellement via le dashboard) qui reçoit la photo, appelle l'API Claude (Sonnet 5, vision) avec un prompt qui embarque les registres de style personnels du profil connecté, les catégories déjà existantes et les archétypes ADN disponibles, puis renvoie un JSON structuré. La clé API Claude est stockée en secret Supabase (`WAIMA_CLAUDE`), jamais exposée côté navigateur.
+  - **Frontend** : le clic envoie la photo (fraîchement sélectionnée ou déjà uploadée en édition) à la fonction, puis pré-remplit libellé, catégorie/sous-catégorie/marque (avec création à la volée si nouveauté), couleur, matière, texture, formalité, saison, ADN dominant/secondaire + intensités, polyvalence, premium perçu, qualité perçue, et description IA.
+  - **Fréquence et attachement ne sont jamais pré-remplis par l'IA** — ce sont des estimations d'usage réel propres à la personne, pas déductibles d'une photo ; restent à saisir manuellement.
+  - **Rien ne s'enregistre automatiquement** : les champs pré-remplis restent à valider/ajuster avant d'appuyer sur Enregistrer, comme n'importe quel remplissage manuel.
+
 ## [1.26.1] - 2026-08-07
 
 ### Corrigé
