@@ -1005,6 +1005,8 @@
           </label>
         </div>
         <p id="photo-status" style="font-size:.76rem;color:var(--text-faint);margin-top:6px;"></p>
+        <button type="button" class="btn" id="ai-analyze-btn" style="margin-top:10px;background:linear-gradient(135deg,var(--accent),#e0a86b);">✨ Analyser avec l'IA</button>
+        <p id="ai-analyze-status" style="font-size:.76rem;color:var(--text-dim);margin-top:6px;"></p>
       </div>
 
       <div class="form-section-title">Identité</div>
@@ -2848,6 +2850,7 @@ const overlay = $('#add-overlay');
 let editingId = null;
 let currentPhotoUrl = null;
 let currentPhotoFit = 'contain';
+let currentPhotoFile = null;
 let allCategories = [];
 let allMarques = [];
 let echelleRef = {};
@@ -2912,8 +2915,113 @@ async function processPendingPhotos(){
   if(uploaded > 0) await loadItems();
 }
 
-$('#f-photo-camera').addEventListener('change', (e) => uploadPhoto(e.target.files[0]));
-$('#f-photo-gallery').addEventListener('change', (e) => uploadPhoto(e.target.files[0]));
+$('#f-photo-camera').addEventListener('change', (e) => { currentPhotoFile = e.target.files[0] || null; uploadPhoto(e.target.files[0]); });
+$('#f-photo-gallery').addEventListener('change', (e) => { currentPhotoFile = e.target.files[0] || null; uploadPhoto(e.target.files[0]); });
+
+// ---------- Analyse IA (Edge Function Supabase -> API Claude) ----------
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function getPhotoForAnalysis(){
+  if(currentPhotoFile){
+    return { base64: await fileToBase64(currentPhotoFile), mimeType: currentPhotoFile.type || 'image/jpeg' };
+  }
+  if(currentPhotoUrl){
+    const res = await fetch(currentPhotoUrl);
+    const blob = await res.blob();
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    return { base64, mimeType: blob.type || 'image/jpeg' };
+  }
+  return null;
+}
+
+function applySelectWithNew(selectId, newInputId, value, existingValues){
+  const exists = value && existingValues.includes(value);
+  $(`#${selectId}`).value = value ? (exists ? value : '__new__') : '';
+  $(`#${newInputId}`).style.display = (!exists && value) ? 'block' : 'none';
+  if(!exists && value) $(`#${newInputId}`).value = value;
+}
+
+function applyAiResultToForm(r){
+  if(r.libelle) $('#f-libelle').value = r.libelle;
+  if(r.couleur_principale) $('#f-couleur').value = r.couleur_principale;
+  if(r.matiere) $('#f-matiere').value = r.matiere;
+  if(r.texture) $('#f-texture').value = r.texture;
+  if(r.description_ia) $('#f-description').value = r.description_ia;
+
+  const catNames = [...new Set(allCategories.map(c => c.categorie))];
+  const catExists = r.categorie && catNames.includes(r.categorie);
+  applySelectWithNew('f-categorie', 'f-categorie-new', r.categorie, catNames);
+  populateSousCategorieOptions(catExists ? r.categorie : '', '');
+  if(r.sous_categorie){
+    const subs = catExists ? allCategories.filter(c => c.categorie === r.categorie && c.sous_categorie).map(c => c.sous_categorie) : [];
+    applySelectWithNew('f-souscategorie', 'f-souscategorie-new', r.sous_categorie, subs);
+  }
+
+  const marqueNames = allMarques.map(m => m.nom);
+  applySelectWithNew('f-marque', 'f-marque-new', r.marque, marqueNames);
+
+  if(r.formalite) setChipGroupValue('f-formalite-chips', 'f-formalite', r.formalite);
+  if(r.polyvalence) setChipGroupValue('f-polyvalence-chips', 'f-polyvalence', r.polyvalence);
+  if(r.premium_percu) setChipGroupValue('f-premium-chips', 'f-premium', r.premium_percu);
+  if(r.qualite_percue) setChipGroupValue('f-qualite-chips', 'f-qualite', r.qualite_percue);
+  if(r.adn_dominant_code) setChipGroupValue('f-adn-dom-chips', 'f-adn-dom', r.adn_dominant_code);
+  if(r.intensite_dominant != null) $('#f-intensite-dom').value = r.intensite_dominant;
+  if(r.adn_secondaire_code) setChipGroupValue('f-adn-sec-chips', 'f-adn-sec', r.adn_secondaire_code);
+  if(r.intensite_secondaire != null) $('#f-intensite-sec').value = r.intensite_secondaire;
+
+  if(Array.isArray(r.saison)){
+    const knownSaisons = ['4 saisons','Chaud','Froid','Mi-saison'];
+    $$('#f-saison-group input[type=checkbox]').forEach(cb => { cb.checked = r.saison.includes(cb.value); });
+    $('#f-saison-autre').value = r.saison.filter(s => !knownSaisons.includes(s)).join(', ');
+  }
+}
+
+$('#ai-analyze-btn').addEventListener('click', async () => {
+  const statusEl = $('#ai-analyze-status');
+  const btn = $('#ai-analyze-btn');
+  const photo = await getPhotoForAnalysis().catch(() => null);
+  if(!photo){
+    statusEl.textContent = "Ajoute d'abord une photo.";
+    return;
+  }
+  btn.disabled = true;
+  statusEl.textContent = 'Analyse en cours…';
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/smart-endpoint`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify({ image_base64: photo.base64, mime_type: photo.mimeType, profil: currentProfil })
+    });
+    const data = await res.json();
+    if(!res.ok || data.error){
+      statusEl.textContent = 'Erreur : ' + (data.error || res.status);
+      return;
+    }
+    applyAiResultToForm(data.result);
+    statusEl.textContent = "Champs pré-remplis par l'IA — vérifie et ajuste avant d'enregistrer. Fréquence/attachement restent à toi.";
+  } catch(err){
+    statusEl.textContent = 'Erreur réseau : ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 function populateSelect(sel, options, placeholder){
   sel.innerHTML = `<option value="">${placeholder}</option>` +
@@ -3011,6 +3119,8 @@ function resetForm(){
   populateSousCategorieOptions('', '');
   setPhoto(null);
   setPhotoFit('contain');
+  currentPhotoFile = null;
+  $('#ai-analyze-status').textContent = '';
   $('#add-error').textContent = '';
   $$('#item-form .chips .chip').forEach(c => c.classList.remove('active'));
 }
@@ -3034,6 +3144,8 @@ function openEditModal(it){
   $('#add-error').textContent = '';
   setPhoto(it.photo_url);
   setPhotoFit(it.photo_fit || 'contain');
+  currentPhotoFile = null;
+  $('#ai-analyze-status').textContent = '';
 
   $('#f-id').value = it.id;
   $('#f-id').disabled = true;
