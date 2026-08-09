@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.25.5] - 2026-08-07
+
+### Ajouté
+- **Création de nouvelle catégorie principale** dans le formulaire d'ajout/édition — option "+ Nouvelle catégorie…" dans le menu Catégorie, avec champ texte, sur le même principe que Sous-catégorie et Marque (qui l'avaient déjà). Le backend supportait déjà la création à la volée ; il manquait l'option côté formulaire.
+
 ## [1.25.4] - 2026-08-07
 
 ### Modifié
