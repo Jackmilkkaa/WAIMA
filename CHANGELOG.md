@@ -4,6 +4,16 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.28.0] - 2026-08-09
+
+### Ajouté
+- **Feature "Photos de style" (préparation MCP — étape 1/3)** : chaque profil peut désormais fournir jusqu'à 20 photos qui représentent sa garde-robe ou le style qu'il vise, à partir desquelles Waïma génère une description de style (titre évocateur + paragraphe), affichée dans Profil.
+  - **Nouvelle table `photos_style`** (RLS activée d'emblée, limite de 20 imposée par trigger côté base en plus du contrôle côté formulaire).
+  - **Nouvelle étape d'onboarding** "Montre-moi ton style", entre Registres et Système — ajout de photos, optionnel.
+  - **Section dédiée dans Profil** : grille de gestion (ajout/suppression à tout moment), affichage de la description générée, bouton "✨ Régénérer mon style".
+  - **Génération à la demande uniquement** (jamais automatique à l'ajout/suppression d'une photo) — nouvelle Edge Function `style-profil`, qui envoie l'ensemble des photos à Claude en un seul appel multi-images, avec un ton assumé "fiche de caractère" (chaleureux, évocateur) mais ancré dans des observations visuelles concrètes (palette, coupes, formalité dominante), jamais de généralités vagues.
+  - **Intégration dans `smart-endpoint`** (v6) : la description de style générée s'ajoute désormais au contexte du prompt d'analyse d'une pièce, aux côtés des registres de style — améliore la justesse de classification (ADN, formalité, polyvalence) d'une nouvelle pièce en donnant à Claude un repère visuel concret plutôt qu'une simple étiquette textuelle.
+
 ## [1.27.5] - 2026-08-07
 
 ### Corrigé
