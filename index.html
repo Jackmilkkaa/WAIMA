@@ -1579,6 +1579,12 @@ async function loadStyleSelections(){
   styleSelectionsRef = data || [];
 }
 
+function motDisplayLabel(label){
+  const found = motsStyleRef.find(m => m.libelle === label);
+  if(!found) return label; // mot libre (hors bibliothèque) : affiché tel quel, pas d'accord possible
+  return currentProfil === 'femme' ? (found.libelle_femme || found.libelle) : found.libelle;
+}
+
 function tierItemHtml(item){
   if(item.type === 'photo'){
     const url = item.photos_style?.photo_url || '';
@@ -1588,7 +1594,7 @@ function tierItemHtml(item){
     </div>`;
   }
   return `<div class="tier-item tier-item-mot" data-id="${item.id}">
-    <span>${escapeHtml(item.label)}</span>
+    <span>${escapeHtml(motDisplayLabel(item.label))}</span>
     <button type="button" class="tier-item-remove" data-id="${item.id}" title="Retirer">✕</button>
   </div>`;
 }
@@ -1712,7 +1718,7 @@ function openTierAddPicker(tier, containerId){
   const usedLabels = new Set(styleSelectionsRef.filter(i => i.type === 'mot').map(i => i.label));
   const available = motsStyleRef.filter(m => !usedLabels.has(m.libelle));
   $('#tier-picker-word-list').innerHTML = available.length
-    ? available.map(m => `<button type="button" class="tier-picker-word" data-libelle="${escapeHtml(m.libelle)}">${escapeHtml(m.libelle)}</button>`).join('')
+    ? available.map(m => `<button type="button" class="tier-picker-word" data-libelle="${escapeHtml(m.libelle)}">${escapeHtml(currentProfil === 'femme' ? (m.libelle_femme || m.libelle) : m.libelle)}</button>`).join('')
     : `<p class="hint" style="margin:0;">Tous les mots de la bibliothèque sont déjà placés.</p>`;
   $('#tier-picker-word-list').querySelectorAll('.tier-picker-word').forEach(btn => {
     btn.addEventListener('click', () => addTierWord(btn.dataset.libelle));
@@ -1811,7 +1817,7 @@ async function regenerateStyle(){
         'Authorization': `Bearer ${session.access_token}`,
         'apikey': SUPABASE_KEY
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({ profil: currentProfil })
     });
     const data = await res.json();
     if(!res.ok || data.error){
