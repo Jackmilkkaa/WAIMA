@@ -4,6 +4,20 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.29.0] - 2026-08-09
+
+### Ajouté
+- **Matrice tier list de style (S/A/B)**, en remplacement complet de l'ancien écran "Registres de style" (texte libre) et de la grille de photos séparée — les deux sont désormais unifiés dans une seule interface :
+  - **Nouvelle table `mots_style`** : bibliothèque de mots/ambiances partagée (Structuré, Décontracté, Coloré, Sobre, Affirmé, Discret, Classique, Décalé, Épuré, Chaleureux, Précis, Spontané, Sportif, Élégant, Minimaliste, Audacieux), ajustable en base sans redéploiement.
+  - **Nouvelle table `style_selections`** : chaque mot ou photo choisi par l'utilisateur est classé en tier S ("me définit le plus"), A ou B, avec glisser-déposer pour ajuster.
+  - **Glisser-déposer tactile fait maison** (Pointer Events, souris + tactile unifiés) — pas de bibliothèque externe, cohérent avec le thème sombre de l'appli.
+  - **Bouton "+ Ajouter" sur chaque ligne de tier** : choix dans la bibliothèque de mots, mot personnalisé libre, ou ajout direct d'une photo — l'élément atterrit directement dans le tier cliqué, déplaçable ensuite.
+  - **Seuil minimum pour générer** : au moins 5 éléments au total dont 3 en tier S (mots et photos confondus) — le bouton "Régénérer mon style" reste désactivé avec message explicite tant que ce n'est pas atteint, contrôlé aussi côté serveur en défense.
+  - **Onboarding** : l'étape "Registres de style" et l'étape "Photos de style" sont fusionnées en une seule étape "Ton style, en mots et en photos" utilisant la même matrice.
+  - **`style-profil`** (v2) : le prompt distingue maintenant explicitement les tiers (poids décroissant S → A → B) dans le texte comme dans l'ordre de présentation des photos à Claude.
+  - **`smart-endpoint`** (v7) : les registres texte libre sont remplacés par les mots de tier S/A comme contexte de style rapide, en complément de la description générée.
+- Table `registres_style` conservée en base (données de Lionel non supprimées) mais plus utilisée par l'appli.
+
 ## [1.28.0] - 2026-08-09
 
 ### Ajouté
