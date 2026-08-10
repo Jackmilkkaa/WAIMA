@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.31.0] - 2026-08-10
+
+### Ajouté
+- **Affichage du diagnostic colorimétrique après analyse IA de portrait** : la fonction `analyser-palette` (v2) détermine déjà un diagnostic explicite en 3 axes (undertone chaud/froid/neutre, valeur claire/moyenne/profonde, chroma vif/mat) avant de classer les 52 couleurs de référence — ce diagnostic était calculé mais jamais montré. Il s'affiche désormais dans une carte sous le bouton d'analyse : "On te lit plutôt comme {saison dominante} — {axes}, {justification}". Reste un point de départ visuel indicatif, pas un diagnostic professionnel.
+
 ## [1.30.1] - 2026-08-10
 
 ### Corrigé
