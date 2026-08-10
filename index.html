@@ -621,6 +621,31 @@
     font-size:.76rem;font-weight:600;padding:5px 11px;cursor:pointer;font-family:inherit;
   }
   .tour-btn.ghost{background:none;border:1px solid var(--border);color:var(--text-dim);}
+
+  /* ---------- Photos de style ---------- */
+  .style-photo-grid{
+    display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-top:4px;
+  }
+  .style-photo-thumb{
+    position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;
+    background:var(--surface-2);border:1px solid var(--border);
+  }
+  .style-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .style-photo-remove{
+    position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
+    background:rgba(10,9,6,.75);border:none;color:#fff;font-size:.7rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;line-height:1;
+  }
+  .style-description-card{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:12px;
+    padding:16px;margin-bottom:14px;
+  }
+  .style-description-titre{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:1.15rem;
+    color:var(--accent);margin-bottom:8px;
+  }
+  .style-description-texte{font-size:.86rem;line-height:1.55;color:var(--text);}
+  .style-description-date{font-size:.7rem;color:var(--text-faint);margin-top:10px;}
 </style>
 </head>
 <body>
@@ -789,6 +814,29 @@
     </div>
     <div class="analyse-section-title" style="font-size:.9rem;margin-top:20px;">Registres de style</div>
     <div id="profile-registres-list" style="margin-bottom:10px;"></div>
+
+    <div class="analyse-section-title" style="font-size:.9rem;">Ton style en photos</div>
+    <p class="hint" style="margin:0 0 10px;">Jusqu'à 20 photos qui représentent ta garde-robe ou le style que tu vises — servent à générer ta description de style et à affiner l'analyse IA de tes pièces.</p>
+    <div id="style-photo-grid" class="style-photo-grid"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin:8px 0 16px;">
+      <label class="btn btn-ghost" id="style-photo-add-label" style="cursor:pointer;text-align:center;flex:1;">
+        + Ajouter des photos
+        <input type="file" id="style-photo-input" accept="image/*" multiple style="display:none;">
+      </label>
+      <span id="style-photo-count" style="font-size:.76rem;color:var(--text-dim);flex-shrink:0;"></span>
+    </div>
+    <p id="style-photo-status" style="font-size:.76rem;color:var(--text-dim);margin:-8px 0 14px;"></p>
+
+    <div id="style-description-block" style="display:none;">
+      <div class="style-description-card">
+        <div class="style-description-titre" id="style-description-titre"></div>
+        <div class="style-description-texte" id="style-description-texte"></div>
+        <div class="style-description-date" id="style-description-date"></div>
+      </div>
+    </div>
+    <button type="button" class="btn" id="regen-style-btn" style="margin-bottom:20px;">✨ Régénérer mon style</button>
+    <p id="regen-style-status" style="font-size:.76rem;color:var(--text-dim);margin:-14px 0 20px;"></p>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" id="replay-onboarding">Relancer le tutoriel</button>
     </div>
@@ -1349,6 +1397,10 @@ let currentPrenom = '';
 let currentNom = '';
 let onboardingComplete = true;
 let registresStyleRef = [];
+let currentStyleTitre = '';
+let currentStyleDescription = '';
+let currentStyleUpdatedAt = null;
+let stylePhotosRef = [];
 
 async function loadProfile(){
   const { data, error } = await supabase.from('profiles').select('*').eq('user_id', currentUserId).maybeSingle();
@@ -1357,6 +1409,9 @@ async function loadProfile(){
     currentPrenom = data.prenom || '';
     currentNom = data.nom || '';
     onboardingComplete = !!data.onboarding_complete;
+    currentStyleTitre = data.style_titre || '';
+    currentStyleDescription = data.style_description || '';
+    currentStyleUpdatedAt = data.style_updated_at || null;
   } else {
     // Première connexion : pas de ligne encore, on en crée une par défaut
     await supabase.from('profiles').insert({ user_id: currentUserId, profil: 'homme', onboarding_complete: false });
@@ -1364,9 +1419,18 @@ async function loadProfile(){
     currentPrenom = '';
     currentNom = '';
     onboardingComplete = false;
+    currentStyleTitre = '';
+    currentStyleDescription = '';
+    currentStyleUpdatedAt = null;
   }
   const { data: registres } = await supabase.from('registres_style').select('*').eq('user_id', currentUserId).order('ordre');
   registresStyleRef = registres || [];
+  await loadStylePhotos();
+}
+
+async function loadStylePhotos(){
+  const { data } = await supabase.from('photos_style').select('*').eq('user_id', currentUserId).order('created_at');
+  stylePhotosRef = data || [];
 }
 
 async function checkSession(){
@@ -1431,6 +1495,10 @@ $('#signout-btn').addEventListener('click', async () => {
 $('#open-profile').addEventListener('click', () => {
   $$('#profil-toggle button').forEach(b => b.classList.toggle('active', b.dataset.profil === currentProfil));
   renderProfileRegistresList();
+  renderStylePhotoGrid('style-photo-grid', 'style-photo-count');
+  renderStyleDescriptionUI();
+  $('#style-photo-status').textContent = '';
+  $('#regen-style-status').textContent = '';
   $('#profile-overlay').classList.add('open');
 });
 $('#profile-close-x').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
@@ -1459,8 +1527,117 @@ function renderProfileRegistresList(){
   `).join('');
 }
 
+// ---------- Photos de style (profil + onboarding) ----------
+const STYLE_PHOTOS_MAX = 20;
+
+function renderStylePhotoGrid(gridId, countId){
+  const grid = document.getElementById(gridId);
+  if(!grid) return;
+  grid.innerHTML = stylePhotosRef.map(p => `
+    <div class="style-photo-thumb" data-id="${p.id}">
+      <img src="${escapeHtml(p.photo_url)}" alt="">
+      <button type="button" class="style-photo-remove" data-id="${p.id}" data-path="${escapeHtml(p.storage_path)}" title="Retirer">✕</button>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.style-photo-remove').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await removeStylePhoto(btn.dataset.id, btn.dataset.path);
+      renderStylePhotoGrid(gridId, countId);
+    });
+  });
+  const countEl = countId ? document.getElementById(countId) : null;
+  if(countEl) countEl.textContent = `${stylePhotosRef.length}/${STYLE_PHOTOS_MAX}`;
+}
+
+async function uploadStylePhotos(files, gridId, countId, statusId){
+  const statusEl = statusId ? document.getElementById(statusId) : null;
+  const remaining = STYLE_PHOTOS_MAX - stylePhotosRef.length;
+  if(remaining <= 0){
+    if(statusEl) statusEl.textContent = `Limite de ${STYLE_PHOTOS_MAX} photos atteinte.`;
+    return;
+  }
+  const toUpload = Array.from(files).slice(0, remaining);
+  if(statusEl) statusEl.textContent = `Envoi de ${toUpload.length} photo(s)…`;
+  for(const file of toUpload){
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${currentUserId}/style/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
+    const { error } = await supabase.storage.from('wardrobe-photos').upload(path, file, { upsert: true });
+    if(error) continue;
+    const { data: urlData } = supabase.storage.from('wardrobe-photos').getPublicUrl(path);
+    await supabase.from('photos_style').insert({ user_id: currentUserId, photo_url: urlData.publicUrl, storage_path: path });
+  }
+  await loadStylePhotos();
+  renderStylePhotoGrid(gridId, countId);
+  if(statusEl) statusEl.textContent = stylePhotosRef.length ? 'Photos à jour.' : '';
+}
+
+async function removeStylePhoto(id, storagePath){
+  await supabase.storage.from('wardrobe-photos').remove([storagePath]);
+  await supabase.from('photos_style').delete().eq('id', id);
+  stylePhotosRef = stylePhotosRef.filter(p => String(p.id) !== String(id));
+}
+
+function renderStyleDescriptionUI(){
+  const block = $('#style-description-block');
+  if(!block) return;
+  if(!currentStyleTitre && !currentStyleDescription){
+    block.style.display = 'none';
+    return;
+  }
+  block.style.display = 'block';
+  $('#style-description-titre').textContent = currentStyleTitre;
+  $('#style-description-texte').textContent = currentStyleDescription;
+  $('#style-description-date').textContent = currentStyleUpdatedAt
+    ? `Généré le ${new Date(currentStyleUpdatedAt).toLocaleDateString('fr-FR')}`
+    : '';
+}
+
+async function regenerateStyle(buttonId, statusId){
+  const btn = document.getElementById(buttonId);
+  const statusEl = document.getElementById(statusId);
+  if(stylePhotosRef.length === 0){
+    if(statusEl) statusEl.textContent = 'Ajoute au moins une photo avant de générer.';
+    return;
+  }
+  btn.disabled = true;
+  if(statusEl) statusEl.textContent = 'Génération en cours… (peut prendre 15-20 secondes)';
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/style-profil`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify({})
+    });
+    const data = await res.json();
+    if(!res.ok || data.error){
+      if(statusEl) statusEl.textContent = 'Erreur : ' + (data.error || res.status);
+      return;
+    }
+    currentStyleTitre = data.result.titre;
+    currentStyleDescription = data.result.description;
+    currentStyleUpdatedAt = new Date().toISOString();
+    renderStyleDescriptionUI();
+    if(statusEl) statusEl.textContent = 'Ta description de style a été mise à jour.';
+  } catch(err){
+    if(statusEl) statusEl.textContent = 'Erreur réseau : ' + err.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+$('#style-photo-input').addEventListener('change', (e) => {
+  uploadStylePhotos(e.target.files, 'style-photo-grid', 'style-photo-count', 'style-photo-status');
+  e.target.value = '';
+});
+$('#regen-style-btn').addEventListener('click', () => regenerateStyle('regen-style-btn', 'regen-style-status'));
+
 // ---------- Onboarding ----------
-const ONBOARDING_STEPS = ['welcome', 'philosophy', 'profil', 'registres', 'systeme', 'tour'];
+const ONBOARDING_STEPS = ['welcome', 'philosophy', 'profil', 'registres', 'style-photos', 'systeme', 'tour'];
 let onboardingStepIndex = 0;
 let onboardingDraft = { prenom:'', nom:'', profil:'homme', registres:[] };
 
@@ -1554,6 +1731,29 @@ function bindRegistresStep(){
   }));
 }
 
+function renderStylePhotosStep(){
+  return `
+    <h2>Montre-moi ton style</h2>
+    <p>Ajoute quelques photos qui représentent ta garde-robe ou le style que tu vises — jusqu'à ${STYLE_PHOTOS_MAX}. Waïma en tire une description de ton style et s'en sert pour mieux analyser tes futures pièces. Optionnel, ajustable à tout moment depuis Profil.</p>
+    <div id="ob-style-photo-grid" class="style-photo-grid"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin:10px 0 6px;">
+      <label class="btn btn-ghost" style="cursor:pointer;text-align:center;flex:1;">
+        + Ajouter des photos
+        <input type="file" id="ob-style-photo-input" accept="image/*" multiple style="display:none;">
+      </label>
+      <span id="ob-style-photo-count" style="font-size:.76rem;color:var(--text-dim);flex-shrink:0;"></span>
+    </div>
+    <p id="ob-style-photo-status" style="font-size:.76rem;color:var(--text-dim);margin:0;"></p>
+  `;
+}
+function bindStylePhotosStep(){
+  renderStylePhotoGrid('ob-style-photo-grid', 'ob-style-photo-count');
+  $('#ob-style-photo-input').addEventListener('change', (e) => {
+    uploadStylePhotos(e.target.files, 'ob-style-photo-grid', 'ob-style-photo-count', 'ob-style-photo-status');
+    e.target.value = '';
+  });
+}
+
 function renderSystemeStep(){
   return `
     <h2>Comment lire Waïma</h2>
@@ -1573,9 +1773,13 @@ function renderSystemeStep(){
 }
 
 function renderTourStep(){
+  const styleNote = stylePhotosRef.length
+    ? `<p style="margin-top:-6px;">Tu as ajouté ${stylePhotosRef.length} photo(s) de style — pense à générer ta description depuis Profil ("✨ Régénérer mon style") quand tu veux.</p>`
+    : '';
   return `
     <h2>À toi de jouer</h2>
     <p>La meilleure façon de comprendre Waïma, c'est d'ajouter une vraie pièce. On peut le faire ensemble, champ par champ.</p>
+    ${styleNote}
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
       <button type="button" class="btn" id="ob-start-tour">Créer ma première pièce (visite guidée)</button>
       <button type="button" class="btn-ghost" id="ob-finish-plain">Terminer sans créer de pièce maintenant</button>
@@ -1595,8 +1799,8 @@ function bindTourStep(){
   });
 }
 
-const ONBOARDING_RENDER = { welcome:renderWelcomeStep, philosophy:renderPhilosophyStep, profil:renderProfilStep, registres:renderRegistresStep, systeme:renderSystemeStep, tour:renderTourStep };
-const ONBOARDING_BIND = { profil:bindProfilStep, registres:bindRegistresStep, tour:bindTourStep };
+const ONBOARDING_RENDER = { welcome:renderWelcomeStep, philosophy:renderPhilosophyStep, profil:renderProfilStep, registres:renderRegistresStep, 'style-photos':renderStylePhotosStep, systeme:renderSystemeStep, tour:renderTourStep };
+const ONBOARDING_BIND = { profil:bindProfilStep, registres:bindRegistresStep, 'style-photos':bindStylePhotosStep, tour:bindTourStep };
 
 function updateOnboardingNav(){
   const idx = onboardingStepIndex;
