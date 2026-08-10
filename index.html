@@ -622,20 +622,55 @@
   }
   .tour-btn.ghost{background:none;border:1px solid var(--border);color:var(--text-dim);}
 
-  /* ---------- Photos de style ---------- */
-  .style-photo-grid{
-    display:grid;grid-template-columns:repeat(4, 1fr);gap:8px;margin-top:4px;
+  /* ---------- Matrice tier list (mots + photos de style) ---------- */
+  .tier-matrix{margin:4px 0 16px;}
+  .tier-row{
+    border:1px solid var(--border);border-radius:10px;
+    padding:10px 10px 12px;margin-bottom:8px;background:var(--surface-2);
+    transition:background .12s,border-color .12s;
   }
-  .style-photo-thumb{
-    position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;
-    background:var(--surface-2);border:1px solid var(--border);
+  .tier-row.tier-row-hover{border-color:var(--accent);background:rgba(212,163,115,.08);}
+  .tier-row-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .tier-row-label{
+    width:26px;height:26px;border-radius:7px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:.85rem;color:#1a1610;
   }
-  .style-photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
-  .style-photo-remove{
-    position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;
-    background:rgba(10,9,6,.75);border:none;color:#fff;font-size:.7rem;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;line-height:1;
+  .tier-row-label.tier-S{background:#2E7D32;}
+  .tier-row-label.tier-A{background:#689F38;}
+  .tier-row-label.tier-B{background:#F9A825;}
+  .tier-add-btn{
+    margin-left:auto;background:none;border:1px dashed var(--border);border-radius:8px;
+    color:var(--accent);font-size:.74rem;padding:5px 10px;cursor:pointer;font-family:inherit;
   }
+  .tier-row-items{display:flex;flex-wrap:wrap;gap:7px;min-height:38px;}
+  .tier-item{
+    position:relative;display:flex;align-items:center;gap:6px;
+    background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:6px 10px;font-size:.8rem;cursor:grab;touch-action:none;user-select:none;
+  }
+  .tier-item.tier-item-photo{padding:3px;border-radius:8px;}
+  .tier-item-photo img{width:36px;height:36px;border-radius:6px;object-fit:cover;display:block;}
+  .tier-item-source-hidden{opacity:.25;}
+  .tier-item-remove{
+    background:none;border:none;color:var(--text-faint);font-size:.7rem;cursor:pointer;
+    padding:2px;line-height:1;flex-shrink:0;
+  }
+  .tier-item.tier-item-photo .tier-item-remove{
+    position:absolute;top:-4px;right:-4px;width:16px;height:16px;border-radius:50%;
+    background:rgba(10,9,6,.85);color:#fff;display:flex;align-items:center;justify-content:center;
+  }
+  .tier-drag-ghost{
+    position:fixed;z-index:300;pointer-events:none;opacity:.92;
+    box-shadow:0 6px 20px rgba(0,0,0,.5);transform:scale(1.05);
+  }
+  .tier-picker-word-list{display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 4px;}
+  .tier-picker-word{
+    background:var(--surface-2);border:1px solid var(--border);border-radius:20px;
+    color:var(--text);font-size:.8rem;padding:6px 12px;cursor:pointer;font-family:inherit;
+  }
+  .tier-picker-word:hover{border-color:var(--accent);}
+
   .style-description-card{
     background:var(--surface-2);border:1px solid var(--border);border-radius:12px;
     padding:16px;margin-bottom:14px;
@@ -812,20 +847,10 @@
         <button type="button" data-profil="femme"><span>♀</span> Femme</button>
       </div>
     </div>
-    <div class="analyse-section-title" style="font-size:.9rem;margin-top:20px;">Registres de style</div>
-    <div id="profile-registres-list" style="margin-bottom:10px;"></div>
 
-    <div class="analyse-section-title" style="font-size:.9rem;">Ton style en photos</div>
-    <p class="hint" style="margin:0 0 10px;">Jusqu'à 20 photos qui représentent ta garde-robe ou le style que tu vises — servent à générer ta description de style et à affiner l'analyse IA de tes pièces.</p>
-    <div id="style-photo-grid" class="style-photo-grid"></div>
-    <div style="display:flex;gap:8px;align-items:center;margin:8px 0 16px;">
-      <label class="btn btn-ghost" id="style-photo-add-label" style="cursor:pointer;text-align:center;flex:1;">
-        + Ajouter des photos
-        <input type="file" id="style-photo-input" accept="image/*" multiple style="display:none;">
-      </label>
-      <span id="style-photo-count" style="font-size:.76rem;color:var(--text-dim);flex-shrink:0;"></span>
-    </div>
-    <p id="style-photo-status" style="font-size:.76rem;color:var(--text-dim);margin:-8px 0 14px;"></p>
+    <div class="analyse-section-title" style="font-size:.9rem;margin-top:20px;">Ton style</div>
+    <p class="hint" style="margin:0 0 10px;">Place des mots et des photos selon à quel point ils te définissent — glisse-les entre les tiers, ou ajoute-en directement dans le bon tier.</p>
+    <div id="profile-tier-matrix" class="tier-matrix"></div>
 
     <div id="style-description-block" style="display:none;">
       <div class="style-description-card">
@@ -834,12 +859,36 @@
         <div class="style-description-date" id="style-description-date"></div>
       </div>
     </div>
-    <button type="button" class="btn" id="regen-style-btn" style="margin-bottom:20px;">✨ Régénérer mon style</button>
-    <p id="regen-style-status" style="font-size:.76rem;color:var(--text-dim);margin:-14px 0 20px;"></p>
+    <button type="button" class="btn" id="regen-style-btn" style="margin-bottom:6px;">✨ Régénérer mon style</button>
+    <p id="regen-style-status" style="font-size:.76rem;color:var(--text-dim);margin:0 0 20px;"></p>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" id="replay-onboarding">Relancer le tutoriel</button>
     </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tier-picker-overlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-sticky-header">
+      <div><h2 style="font-size:1.1rem;">Ajouter à ce tier</h2></div>
+      <button class="modal-close-x" id="tier-picker-close-x">✕</button>
+    </div>
+    <div class="field-block">
+      <label for="tier-picker-custom-input">Ton propre mot</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="tier-picker-custom-input" placeholder="Ex. Nonchalant" style="flex:1;">
+        <button type="button" class="btn" id="tier-picker-custom-add" style="width:auto;padding:0 16px;">Ajouter</button>
+      </div>
+    </div>
+    <div class="analyse-section-title" style="font-size:.85rem;">Ou choisis dans la bibliothèque</div>
+    <div id="tier-picker-word-list" class="tier-picker-word-list"></div>
+    <div class="analyse-section-title" style="font-size:.85rem;">Ou ajoute une photo</div>
+    <label class="btn btn-ghost" style="cursor:pointer;text-align:center;display:block;">
+      + Choisir une photo
+      <input type="file" id="tier-picker-photo-input" accept="image/*" multiple style="display:none;">
+    </label>
+    <p id="tier-picker-status" style="font-size:.76rem;color:var(--text-dim);margin-top:8px;"></p>
   </div>
 </div>
 
@@ -1396,7 +1445,7 @@ function renderMatchesForItem(id){
 let currentPrenom = '';
 let currentNom = '';
 let onboardingComplete = true;
-let registresStyleRef = [];
+let registresStyleRef = []; // table conservée mais plus utilisée par l'appli (remplacée par mots_style / style_selections)
 let currentStyleTitre = '';
 let currentStyleDescription = '';
 let currentStyleUpdatedAt = null;
@@ -1423,9 +1472,9 @@ async function loadProfile(){
     currentStyleDescription = '';
     currentStyleUpdatedAt = null;
   }
-  const { data: registres } = await supabase.from('registres_style').select('*').eq('user_id', currentUserId).order('ordre');
-  registresStyleRef = registres || [];
   await loadStylePhotos();
+  await loadMotsStyle();
+  await loadStyleSelections();
 }
 
 async function loadStylePhotos(){
@@ -1494,11 +1543,9 @@ $('#signout-btn').addEventListener('click', async () => {
 
 $('#open-profile').addEventListener('click', () => {
   $$('#profil-toggle button').forEach(b => b.classList.toggle('active', b.dataset.profil === currentProfil));
-  renderProfileRegistresList();
-  renderStylePhotoGrid('style-photo-grid', 'style-photo-count');
+  renderTierMatrix('profile-tier-matrix');
   renderStyleDescriptionUI();
-  $('#style-photo-status').textContent = '';
-  $('#regen-style-status').textContent = '';
+  updateRegenReadiness();
   $('#profile-overlay').classList.add('open');
 });
 $('#profile-close-x').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
@@ -1512,72 +1559,213 @@ $$('#profil-toggle button').forEach(b => b.addEventListener('click', async () =>
   render();
 }));
 
-function renderProfileRegistresList(){
-  const container = $('#profile-registres-list');
-  if(!container) return;
-  if(registresStyleRef.length === 0){
-    container.innerHTML = `<p class="hint" style="margin:0;">Aucun registre défini — relance le tutoriel pour en ajouter.</p>`;
-    return;
-  }
-  container.innerHTML = registresStyleRef.map(r => `
-    <div class="onboarding-explainer-card">
-      <h4>${escapeHtml(r.libelle)}</h4>
-      ${r.description ? `<p>${escapeHtml(r.description)}</p>` : ''}
-    </div>
-  `).join('');
+// ---------- Matrice tier list (mots + photos de style) — Profil + onboarding ----------
+const STYLE_PHOTOS_MAX = 20;
+let motsStyleRef = [];
+let styleSelectionsRef = [];
+let currentTierAddTarget = null; // { tier, containerId }
+let tierDragState = null;
+
+async function loadMotsStyle(){
+  const { data } = await supabase.from('mots_style').select('*').order('ordre');
+  motsStyleRef = data || [];
 }
 
-// ---------- Photos de style (profil + onboarding) ----------
-const STYLE_PHOTOS_MAX = 20;
+async function loadStyleSelections(){
+  const { data } = await supabase.from('style_selections')
+    .select('*, photos_style(photo_url, storage_path)')
+    .eq('user_id', currentUserId)
+    .order('ordre');
+  styleSelectionsRef = data || [];
+}
 
-function renderStylePhotoGrid(gridId, countId){
-  const grid = document.getElementById(gridId);
-  if(!grid) return;
-  grid.innerHTML = stylePhotosRef.map(p => `
-    <div class="style-photo-thumb" data-id="${p.id}">
-      <img src="${escapeHtml(p.photo_url)}" alt="">
-      <button type="button" class="style-photo-remove" data-id="${p.id}" data-path="${escapeHtml(p.storage_path)}" title="Retirer">✕</button>
+function tierItemHtml(item){
+  if(item.type === 'photo'){
+    const url = item.photos_style?.photo_url || '';
+    return `<div class="tier-item tier-item-photo" data-id="${item.id}">
+      <img src="${escapeHtml(url)}" alt="">
+      <button type="button" class="tier-item-remove" data-id="${item.id}" title="Retirer">✕</button>
+    </div>`;
+  }
+  return `<div class="tier-item tier-item-mot" data-id="${item.id}">
+    <span>${escapeHtml(item.label)}</span>
+    <button type="button" class="tier-item-remove" data-id="${item.id}" title="Retirer">✕</button>
+  </div>`;
+}
+
+const TIER_LABELS = { S: 'Ce qui te définit le plus', A: 'Ce qui te touche aussi', B: 'Dans une moindre mesure' };
+
+function renderTierMatrix(containerId){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = ['S','A','B'].map(t => `
+    <div class="tier-row" data-tier="${t}">
+      <div class="tier-row-head">
+        <span class="tier-row-label tier-${t}">${t}</span>
+        <button type="button" class="tier-add-btn" data-tier="${t}" data-container="${containerId}">+ Ajouter</button>
+      </div>
+      <div class="tier-row-items" data-tier="${t}">
+        ${styleSelectionsRef.filter(it => it.tier === t).map(it => tierItemHtml(it)).join('')}
+      </div>
     </div>
   `).join('');
-  grid.querySelectorAll('.style-photo-remove').forEach(btn => {
+
+  container.querySelectorAll('.tier-item').forEach(el => {
+    const item = styleSelectionsRef.find(i => String(i.id) === el.dataset.id);
+    if(item) attachTierItemDrag(el, item, containerId);
+  });
+  container.querySelectorAll('.tier-item-remove').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      await removeStylePhoto(btn.dataset.id, btn.dataset.path);
-      renderStylePhotoGrid(gridId, countId);
+      await removeStyleSelection(btn.dataset.id);
+      renderTierMatrix(containerId);
+      updateRegenReadiness();
     });
   });
-  const countEl = countId ? document.getElementById(countId) : null;
-  if(countEl) countEl.textContent = `${stylePhotosRef.length}/${STYLE_PHOTOS_MAX}`;
+  container.querySelectorAll('.tier-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => openTierAddPicker(btn.dataset.tier, containerId));
+  });
 }
 
-async function uploadStylePhotos(files, gridId, countId, statusId){
-  const statusEl = statusId ? document.getElementById(statusId) : null;
-  const remaining = STYLE_PHOTOS_MAX - stylePhotosRef.length;
-  if(remaining <= 0){
-    if(statusEl) statusEl.textContent = `Limite de ${STYLE_PHOTOS_MAX} photos atteinte.`;
-    return;
+async function removeStyleSelection(id){
+  const item = styleSelectionsRef.find(i => String(i.id) === String(id));
+  if(!item) return;
+  if(item.type === 'photo'){
+    // Supprimer la photo elle-même (storage + photos_style) — la ligne style_selections
+    // suit automatiquement via ON DELETE CASCADE.
+    if(item.photos_style?.storage_path){
+      await supabase.storage.from('wardrobe-photos').remove([item.photos_style.storage_path]);
+    }
+    await supabase.from('photos_style').delete().eq('id', item.photo_id);
+    stylePhotosRef = stylePhotosRef.filter(p => String(p.id) !== String(item.photo_id));
+  } else {
+    await supabase.from('style_selections').delete().eq('id', item.id);
   }
-  const toUpload = Array.from(files).slice(0, remaining);
-  if(statusEl) statusEl.textContent = `Envoi de ${toUpload.length} photo(s)…`;
+  styleSelectionsRef = styleSelectionsRef.filter(i => String(i.id) !== String(item.id));
+}
+
+async function updateSelectionTier(id, tier){
+  await supabase.from('style_selections').update({ tier }).eq('id', id);
+  const item = styleSelectionsRef.find(i => String(i.id) === String(id));
+  if(item) item.tier = tier;
+}
+
+// ---------- Glisser-déposer tactile (Pointer Events, souris + tactile) ----------
+function attachTierItemDrag(el, item, containerId){
+  el.addEventListener('pointerdown', (e) => {
+    if(e.target.closest('.tier-item-remove')) return;
+    e.preventDefault();
+    const rect = el.getBoundingClientRect();
+    const ghost = el.cloneNode(true);
+    ghost.classList.add('tier-drag-ghost');
+    ghost.style.width = rect.width + 'px';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    document.body.appendChild(ghost);
+    tierDragState = {
+      itemId: item.id, containerId, ghost, pointerId: e.pointerId,
+      offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      sourceEl: el
+    };
+    el.classList.add('tier-item-source-hidden');
+    el.setPointerCapture(e.pointerId);
+  });
+
+  el.addEventListener('pointermove', (e) => {
+    if(!tierDragState || tierDragState.pointerId !== e.pointerId) return;
+    tierDragState.ghost.style.left = (e.clientX - tierDragState.offsetX) + 'px';
+    tierDragState.ghost.style.top = (e.clientY - tierDragState.offsetY) + 'px';
+    clearDropHighlight(containerId);
+    const row = dropRowAt(e.clientX, e.clientY, containerId);
+    if(row) row.classList.add('tier-row-hover');
+  });
+
+  const finishDrag = async (e) => {
+    if(!tierDragState || tierDragState.pointerId !== e.pointerId) return;
+    const row = dropRowAt(e.clientX, e.clientY, containerId);
+    const dropTier = row ? row.dataset.tier : null;
+    tierDragState.ghost.remove();
+    tierDragState.sourceEl.classList.remove('tier-item-source-hidden');
+    clearDropHighlight(containerId);
+    tierDragState = null;
+    if(dropTier && dropTier !== item.tier){
+      await updateSelectionTier(item.id, dropTier);
+      renderTierMatrix(containerId);
+      updateRegenReadiness();
+    }
+  };
+  el.addEventListener('pointerup', finishDrag);
+  el.addEventListener('pointercancel', finishDrag);
+}
+
+function dropRowAt(x, y, containerId){
+  const el = document.elementFromPoint(x, y);
+  return el ? el.closest(`#${containerId} .tier-row`) : null;
+}
+function clearDropHighlight(containerId){
+  document.querySelectorAll(`#${containerId} .tier-row`).forEach(r => r.classList.remove('tier-row-hover'));
+}
+
+// ---------- Sélecteur "+ Ajouter" (mot bibliothèque, mot libre, ou photo) ----------
+function openTierAddPicker(tier, containerId){
+  currentTierAddTarget = { tier, containerId };
+  const usedLabels = new Set(styleSelectionsRef.filter(i => i.type === 'mot').map(i => i.label));
+  const available = motsStyleRef.filter(m => !usedLabels.has(m.libelle));
+  $('#tier-picker-word-list').innerHTML = available.length
+    ? available.map(m => `<button type="button" class="tier-picker-word" data-libelle="${escapeHtml(m.libelle)}">${escapeHtml(m.libelle)}</button>`).join('')
+    : `<p class="hint" style="margin:0;">Tous les mots de la bibliothèque sont déjà placés.</p>`;
+  $('#tier-picker-word-list').querySelectorAll('.tier-picker-word').forEach(btn => {
+    btn.addEventListener('click', () => addTierWord(btn.dataset.libelle));
+  });
+  $('#tier-picker-custom-input').value = '';
+  $('#tier-picker-status').textContent = '';
+  $('#tier-picker-overlay').classList.add('open');
+}
+
+async function addTierWord(label){
+  if(!label || !currentTierAddTarget) return;
+  const { tier, containerId } = currentTierAddTarget;
+  await supabase.from('style_selections').insert({ user_id: currentUserId, type: 'mot', label, tier });
+  await loadStyleSelections();
+  renderTierMatrix(containerId);
+  updateRegenReadiness();
+  $('#tier-picker-overlay').classList.remove('open');
+}
+
+$('#tier-picker-custom-add').addEventListener('click', () => {
+  const val = $('#tier-picker-custom-input').value.trim();
+  if(val) addTierWord(val);
+});
+$('#tier-picker-close-x').addEventListener('click', () => $('#tier-picker-overlay').classList.remove('open'));
+
+$('#tier-picker-photo-input').addEventListener('change', async (e) => {
+  if(!currentTierAddTarget){ e.target.value = ''; return; }
+  const { tier, containerId } = currentTierAddTarget;
+  const statusEl = $('#tier-picker-status');
+  const remaining = STYLE_PHOTOS_MAX - stylePhotosRef.length;
+  if(remaining <= 0){ statusEl.textContent = `Limite de ${STYLE_PHOTOS_MAX} photos atteinte.`; e.target.value = ''; return; }
+  const toUpload = Array.from(e.target.files).slice(0, remaining);
+  statusEl.textContent = `Envoi de ${toUpload.length} photo(s)…`;
   for(const file of toUpload){
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `${currentUserId}/style/${Date.now()}-${Math.random().toString(36).slice(2,7)}.${ext}`;
     const { error } = await supabase.storage.from('wardrobe-photos').upload(path, file, { upsert: true });
     if(error) continue;
     const { data: urlData } = supabase.storage.from('wardrobe-photos').getPublicUrl(path);
-    await supabase.from('photos_style').insert({ user_id: currentUserId, photo_url: urlData.publicUrl, storage_path: path });
+    const { data: photoRow } = await supabase.from('photos_style')
+      .insert({ user_id: currentUserId, photo_url: urlData.publicUrl, storage_path: path })
+      .select().single();
+    if(photoRow) await supabase.from('style_selections').insert({ user_id: currentUserId, type: 'photo', photo_id: photoRow.id, tier });
   }
   await loadStylePhotos();
-  renderStylePhotoGrid(gridId, countId);
-  if(statusEl) statusEl.textContent = stylePhotosRef.length ? 'Photos à jour.' : '';
-}
+  await loadStyleSelections();
+  renderTierMatrix(containerId);
+  updateRegenReadiness();
+  statusEl.textContent = 'Photo(s) ajoutée(s).';
+  e.target.value = '';
+});
 
-async function removeStylePhoto(id, storagePath){
-  await supabase.storage.from('wardrobe-photos').remove([storagePath]);
-  await supabase.from('photos_style').delete().eq('id', id);
-  stylePhotosRef = stylePhotosRef.filter(p => String(p.id) !== String(id));
-}
-
+// ---------- Description de style générée ----------
 function renderStyleDescriptionUI(){
   const block = $('#style-description-block');
   if(!block) return;
@@ -1593,15 +1781,27 @@ function renderStyleDescriptionUI(){
     : '';
 }
 
-async function regenerateStyle(buttonId, statusId){
-  const btn = document.getElementById(buttonId);
-  const statusEl = document.getElementById(statusId);
-  if(stylePhotosRef.length === 0){
-    if(statusEl) statusEl.textContent = 'Ajoute au moins une photo avant de générer.';
-    return;
+const STYLE_MIN_TOTAL = 5;
+const STYLE_MIN_S = 3;
+
+function updateRegenReadiness(){
+  const btn = $('#regen-style-btn');
+  const status = $('#regen-style-status');
+  if(!btn) return;
+  const total = styleSelectionsRef.length;
+  const sCount = styleSelectionsRef.filter(i => i.tier === 'S').length;
+  const ready = total >= STYLE_MIN_TOTAL && sCount >= STYLE_MIN_S;
+  btn.disabled = !ready;
+  if(status){
+    status.textContent = ready ? '' : `Pour générer : au moins ${STYLE_MIN_TOTAL} éléments au total (${total}/${STYLE_MIN_TOTAL}) dont ${STYLE_MIN_S} en tier S (${sCount}/${STYLE_MIN_S}).`;
   }
+}
+
+async function regenerateStyle(){
+  const btn = $('#regen-style-btn');
+  const statusEl = $('#regen-style-status');
   btn.disabled = true;
-  if(statusEl) statusEl.textContent = 'Génération en cours… (peut prendre 15-20 secondes)';
+  statusEl.textContent = 'Génération en cours… (peut prendre 15-20 secondes)';
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const res = await fetch(`${SUPABASE_URL}/functions/v1/style-profil`, {
@@ -1615,29 +1815,26 @@ async function regenerateStyle(buttonId, statusId){
     });
     const data = await res.json();
     if(!res.ok || data.error){
-      if(statusEl) statusEl.textContent = 'Erreur : ' + (data.error || res.status);
+      statusEl.textContent = 'Erreur : ' + (data.error || res.status);
+      updateRegenReadiness();
       return;
     }
     currentStyleTitre = data.result.titre;
     currentStyleDescription = data.result.description;
     currentStyleUpdatedAt = new Date().toISOString();
     renderStyleDescriptionUI();
-    if(statusEl) statusEl.textContent = 'Ta description de style a été mise à jour.';
+    statusEl.textContent = 'Ta description de style a été mise à jour.';
   } catch(err){
-    if(statusEl) statusEl.textContent = 'Erreur réseau : ' + err.message;
+    statusEl.textContent = 'Erreur réseau : ' + err.message;
   } finally {
-    btn.disabled = false;
+    updateRegenReadiness();
   }
 }
 
-$('#style-photo-input').addEventListener('change', (e) => {
-  uploadStylePhotos(e.target.files, 'style-photo-grid', 'style-photo-count', 'style-photo-status');
-  e.target.value = '';
-});
-$('#regen-style-btn').addEventListener('click', () => regenerateStyle('regen-style-btn', 'regen-style-status'));
+$('#regen-style-btn').addEventListener('click', regenerateStyle);
 
 // ---------- Onboarding ----------
-const ONBOARDING_STEPS = ['welcome', 'philosophy', 'profil', 'registres', 'style-photos', 'systeme', 'tour'];
+const ONBOARDING_STEPS = ['welcome', 'philosophy', 'profil', 'style-tiers', 'systeme', 'tour'];
 let onboardingStepIndex = 0;
 let onboardingDraft = { prenom:'', nom:'', profil:'homme', registres:[] };
 
@@ -1693,65 +1890,15 @@ function bindProfilStep(){
   });
 }
 
-function registreRowHtml(r, i){
+function renderStyleTiersStep(){
   return `
-    <div class="registre-row" data-idx="${i}">
-      <div style="flex:1;">
-        <input type="text" class="registre-libelle" placeholder="Nom du registre (ex. British texturé)" value="${escapeHtml(r.libelle || '')}" style="margin-bottom:5px;">
-        <input type="text" class="registre-desc" placeholder="Description courte (optionnel)" value="${escapeHtml(r.description || '')}">
-      </div>
-      <button type="button" class="registre-remove" data-idx="${i}" title="Retirer">✕</button>
-    </div>`;
-}
-function renderRegistresStep(){
-  const rows = onboardingDraft.registres.length ? onboardingDraft.registres : [{libelle:'', description:''}];
-  return `
-    <h2>Tes registres de style</h2>
-    <p>Au-delà de l'ADN par pièce, définis 2 à 4 registres qui décrivent ton style global — Waïma s'en sert comme contexte pour mieux estimer tes pièces. Optionnel, ajustable à tout moment depuis Profil.</p>
-    <div id="registres-rows">${rows.map((r,i) => registreRowHtml(r,i)).join('')}</div>
-    <button type="button" class="registre-add-btn" id="registre-add">+ Ajouter un registre</button>
+    <h2>Ton style, en mots et en photos</h2>
+    <p>Place des mots et des photos selon à quel point ils te définissent. Waïma en tire une description de ton style et s'en sert pour mieux analyser tes futures pièces. Optionnel, ajustable à tout moment depuis Profil.</p>
+    <div id="ob-tier-matrix" class="tier-matrix"></div>
   `;
 }
-function captureRegistresFromDom(){
-  onboardingDraft.registres = $$('#registres-rows .registre-row').map(row => ({
-    libelle: row.querySelector('.registre-libelle').value.trim(),
-    description: row.querySelector('.registre-desc').value.trim()
-  }));
-}
-function bindRegistresStep(){
-  $('#registre-add').addEventListener('click', () => {
-    captureRegistresFromDom();
-    onboardingDraft.registres.push({libelle:'', description:''});
-    renderOnboardingStep();
-  });
-  $$('.registre-remove').forEach(btn => btn.addEventListener('click', () => {
-    captureRegistresFromDom();
-    onboardingDraft.registres.splice(parseInt(btn.dataset.idx), 1);
-    renderOnboardingStep();
-  }));
-}
-
-function renderStylePhotosStep(){
-  return `
-    <h2>Montre-moi ton style</h2>
-    <p>Ajoute quelques photos qui représentent ta garde-robe ou le style que tu vises — jusqu'à ${STYLE_PHOTOS_MAX}. Waïma en tire une description de ton style et s'en sert pour mieux analyser tes futures pièces. Optionnel, ajustable à tout moment depuis Profil.</p>
-    <div id="ob-style-photo-grid" class="style-photo-grid"></div>
-    <div style="display:flex;gap:8px;align-items:center;margin:10px 0 6px;">
-      <label class="btn btn-ghost" style="cursor:pointer;text-align:center;flex:1;">
-        + Ajouter des photos
-        <input type="file" id="ob-style-photo-input" accept="image/*" multiple style="display:none;">
-      </label>
-      <span id="ob-style-photo-count" style="font-size:.76rem;color:var(--text-dim);flex-shrink:0;"></span>
-    </div>
-    <p id="ob-style-photo-status" style="font-size:.76rem;color:var(--text-dim);margin:0;"></p>
-  `;
-}
-function bindStylePhotosStep(){
-  renderStylePhotoGrid('ob-style-photo-grid', 'ob-style-photo-count');
-  $('#ob-style-photo-input').addEventListener('change', (e) => {
-    uploadStylePhotos(e.target.files, 'ob-style-photo-grid', 'ob-style-photo-count', 'ob-style-photo-status');
-    e.target.value = '';
-  });
+function bindStyleTiersStep(){
+  renderTierMatrix('ob-tier-matrix');
 }
 
 function renderSystemeStep(){
@@ -1773,8 +1920,8 @@ function renderSystemeStep(){
 }
 
 function renderTourStep(){
-  const styleNote = stylePhotosRef.length
-    ? `<p style="margin-top:-6px;">Tu as ajouté ${stylePhotosRef.length} photo(s) de style — pense à générer ta description depuis Profil ("✨ Régénérer mon style") quand tu veux.</p>`
+  const styleNote = styleSelectionsRef.length
+    ? `<p style="margin-top:-6px;">Tu as placé ${styleSelectionsRef.length} élément(s) sur ta matrice de style — pense à générer ta description depuis Profil ("✨ Régénérer mon style") une fois le seuil minimum atteint.</p>`
     : '';
   return `
     <h2>À toi de jouer</h2>
@@ -1799,8 +1946,8 @@ function bindTourStep(){
   });
 }
 
-const ONBOARDING_RENDER = { welcome:renderWelcomeStep, philosophy:renderPhilosophyStep, profil:renderProfilStep, registres:renderRegistresStep, 'style-photos':renderStylePhotosStep, systeme:renderSystemeStep, tour:renderTourStep };
-const ONBOARDING_BIND = { profil:bindProfilStep, registres:bindRegistresStep, 'style-photos':bindStylePhotosStep, tour:bindTourStep };
+const ONBOARDING_RENDER = { welcome:renderWelcomeStep, philosophy:renderPhilosophyStep, profil:renderProfilStep, 'style-tiers':renderStyleTiersStep, systeme:renderSystemeStep, tour:renderTourStep };
+const ONBOARDING_BIND = { profil:bindProfilStep, 'style-tiers':bindStyleTiersStep, tour:bindTourStep };
 
 function updateOnboardingNav(){
   const idx = onboardingStepIndex;
@@ -1824,8 +1971,6 @@ function captureStepData(step){
   if(step === 'welcome'){
     onboardingDraft.prenom = $('#ob-prenom')?.value.trim() || '';
     onboardingDraft.nom = $('#ob-nom')?.value.trim() || '';
-  } else if(step === 'registres'){
-    captureRegistresFromDom();
   }
 }
 
@@ -1844,19 +1989,7 @@ async function finishOnboarding(){
     updated_at: new Date().toISOString()
   }).eq('user_id', currentUserId);
 
-  await supabase.from('registres_style').delete().eq('user_id', currentUserId);
-  const rows = onboardingDraft.registres.filter(r => r.libelle);
-  if(rows.length){
-    const { data } = await supabase.from('registres_style').insert(
-      rows.map((r,i) => ({ user_id: currentUserId, libelle: r.libelle, description: r.description || null, ordre: i+1 }))
-    ).select('*');
-    registresStyleRef = data || [];
-  } else {
-    registresStyleRef = [];
-  }
-
   $$('#profil-toggle button').forEach(b => b.classList.toggle('active', b.dataset.profil === currentProfil));
-  renderProfileRegistresList();
   await loadReferenceData();
   populateFormReferenceData();
   render();
@@ -1864,12 +1997,7 @@ async function finishOnboarding(){
 
 function startOnboarding(){
   onboardingStepIndex = 0;
-  onboardingDraft = {
-    prenom: currentPrenom,
-    nom: currentNom,
-    profil: currentProfil,
-    registres: registresStyleRef.map(r => ({ libelle:r.libelle, description:r.description || '' }))
-  };
+  onboardingDraft = { prenom: currentPrenom, nom: currentNom, profil: currentProfil };
   renderOnboardingStep();
   $('#onboarding-overlay').classList.add('open');
 }
