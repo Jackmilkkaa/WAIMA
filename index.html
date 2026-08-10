@@ -888,7 +888,11 @@
         <input type="file" id="palette-portrait-gallery" accept="image/*" style="display:none;">
       </label>
     </div>
-    <p id="palette-portrait-status" style="font-size:.76rem;color:var(--text-dim);margin:0 0 20px;"></p>
+    <p id="palette-portrait-status" style="font-size:.76rem;color:var(--text-dim);margin:0 0 6px;"></p>
+    <div id="palette-diagnostic-card" class="style-description-card" style="display:none;margin:0 0 20px;">
+      <div class="style-description-titre" id="palette-diagnostic-titre"></div>
+      <div class="style-description-texte" id="palette-diagnostic-texte"></div>
+    </div>
 
     <div class="modal-actions">
       <button class="btn btn-ghost" id="replay-onboarding">Relancer le tutoriel</button>
@@ -1588,6 +1592,7 @@ $('#open-profile').addEventListener('click', () => {
   updateRegenReadiness();
   renderColorTierMatrix('color-tier-matrix');
   $('#palette-portrait-status').textContent = '';
+  $('#palette-diagnostic-card').style.display = 'none';
   $('#profile-overlay').classList.add('open');
 });
 $('#profile-close-x').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
@@ -2042,6 +2047,7 @@ async function handlePortraitFile(file){
   const statusEl = $('#palette-portrait-status');
   if(!file) return;
   statusEl.textContent = 'Analyse en cours… (peut prendre 20-30 secondes, 52 couleurs à classer)';
+  $('#palette-diagnostic-card').style.display = 'none';
   try {
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -2067,6 +2073,17 @@ async function handlePortraitFile(file){
     await loadCouleurSelections();
     renderColorTierMatrix('color-tier-matrix');
     statusEl.textContent = `${data.result.count} couleurs classées — ajuste selon ton ressenti réel.`;
+    const diag = data.result.diagnostic;
+    if(diag){
+      const axes = [
+        diag.undertone,
+        diag.valeur,
+        diag.chroma === 'vif' ? 'chroma vif' : 'chroma mat'
+      ].filter(Boolean).join(', ');
+      $('#palette-diagnostic-titre').textContent = `On te lit plutôt comme ${diag.saison_dominante || '—'}`;
+      $('#palette-diagnostic-texte').textContent = [axes, diag.notes].filter(Boolean).join(' — ');
+      $('#palette-diagnostic-card').style.display = '';
+    }
   } catch(err){
     statusEl.textContent = 'Erreur réseau : ' + err.message;
   }
