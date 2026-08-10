@@ -1492,6 +1492,8 @@ let currentStyleTitre = '';
 let currentStyleDescription = '';
 let currentStyleUpdatedAt = null;
 let stylePhotosRef = [];
+let currentDiagnosticTeint = null;
+let currentDiagnosticTeintUpdatedAt = null;
 
 async function loadProfile(){
   const { data, error } = await supabase.from('profiles').select('*').eq('user_id', currentUserId).maybeSingle();
@@ -1503,6 +1505,8 @@ async function loadProfile(){
     currentStyleTitre = data.style_titre || '';
     currentStyleDescription = data.style_description || '';
     currentStyleUpdatedAt = data.style_updated_at || null;
+    currentDiagnosticTeint = data.diagnostic_teint || null;
+    currentDiagnosticTeintUpdatedAt = data.diagnostic_teint_updated_at || null;
   } else {
     // Première connexion : pas de ligne encore, on en crée une par défaut
     await supabase.from('profiles').insert({ user_id: currentUserId, profil: 'homme', onboarding_complete: false });
@@ -1513,12 +1517,27 @@ async function loadProfile(){
     currentStyleTitre = '';
     currentStyleDescription = '';
     currentStyleUpdatedAt = null;
+    currentDiagnosticTeint = null;
+    currentDiagnosticTeintUpdatedAt = null;
   }
   await loadStylePhotos();
   await loadMotsStyle();
   await loadStyleSelections();
   await loadPaletteCouleurs();
   await loadCouleurSelections();
+}
+
+function renderDiagnosticTeintUI(){
+  const card = $('#palette-diagnostic-card');
+  if(!currentDiagnosticTeint){
+    card.style.display = 'none';
+    return;
+  }
+  const diag = currentDiagnosticTeint;
+  const axes = [diag.undertone, diag.valeur, diag.chroma === 'vif' ? 'chroma vif' : 'chroma mat'].filter(Boolean).join(', ');
+  $('#palette-diagnostic-titre').textContent = `On te lit plutôt comme ${diag.saison_dominante || '—'}`;
+  $('#palette-diagnostic-texte').textContent = [axes, diag.notes].filter(Boolean).join(' — ');
+  card.style.display = '';
 }
 
 async function loadStylePhotos(){
@@ -1592,7 +1611,7 @@ $('#open-profile').addEventListener('click', () => {
   updateRegenReadiness();
   renderColorTierMatrix('color-tier-matrix');
   $('#palette-portrait-status').textContent = '';
-  $('#palette-diagnostic-card').style.display = 'none';
+  renderDiagnosticTeintUI();
   $('#profile-overlay').classList.add('open');
 });
 $('#profile-close-x').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
@@ -2047,7 +2066,6 @@ async function handlePortraitFile(file){
   const statusEl = $('#palette-portrait-status');
   if(!file) return;
   statusEl.textContent = 'Analyse en cours… (peut prendre 20-30 secondes, 52 couleurs à classer)';
-  $('#palette-diagnostic-card').style.display = 'none';
   try {
     const base64 = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -2073,16 +2091,10 @@ async function handlePortraitFile(file){
     await loadCouleurSelections();
     renderColorTierMatrix('color-tier-matrix');
     statusEl.textContent = `${data.result.count} couleurs classées — ajuste selon ton ressenti réel.`;
-    const diag = data.result.diagnostic;
-    if(diag){
-      const axes = [
-        diag.undertone,
-        diag.valeur,
-        diag.chroma === 'vif' ? 'chroma vif' : 'chroma mat'
-      ].filter(Boolean).join(', ');
-      $('#palette-diagnostic-titre').textContent = `On te lit plutôt comme ${diag.saison_dominante || '—'}`;
-      $('#palette-diagnostic-texte').textContent = [axes, diag.notes].filter(Boolean).join(' — ');
-      $('#palette-diagnostic-card').style.display = '';
+    if(data.result.diagnostic){
+      currentDiagnosticTeint = data.result.diagnostic;
+      currentDiagnosticTeintUpdatedAt = new Date().toISOString();
+      renderDiagnosticTeintUI();
     }
   } catch(err){
     statusEl.textContent = 'Erreur réseau : ' + err.message;
