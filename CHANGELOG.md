@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.29.1] - 2026-08-10
+
+### Corrigé
+- **Bibliothèque de mots de style non accordée au féminin** : les 16 mots (Structuré, Élégant, Sportif...) n'existaient qu'au masculin, sans équivalent pour un profil femme — même oubli que ce qu'on avait déjà corrigé pour l'ADN, pas reproduit ici initialement. Ajout d'une colonne `libelle_femme` sur `mots_style`, résolue à l'affichage selon le profil (comme pour l'ADN) — le stockage reste sur la forme canonique (masculin), seul l'affichage s'accorde. Les mots libres (hors bibliothèque) restent affichés tels que tapés, sans accord possible.
+- La forme accordée est aussi utilisée côté serveur (`style-profil` v3, `smart-endpoint` v8) pour que le texte envoyé à Claude — et donc la description générée — respecte la grammaire du profil concerné.
+
 ## [1.29.0] - 2026-08-09
 
 ### Ajouté
