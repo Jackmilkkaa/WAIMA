@@ -877,10 +877,15 @@
     <div class="analyse-section-title" style="font-size:.9rem;">Ta palette de couleurs</div>
     <p class="hint" style="margin:0 0 10px;">Quelles couleurs te mettent en valeur, et lesquelles éviter — indépendant de l'harmonie entre pièces, ça parle de ton teint à toi.</p>
     <div id="color-tier-matrix" class="tier-matrix"></div>
-    <div style="display:flex;gap:8px;align-items:center;margin:4px 0 6px;">
+    <p class="hint" style="margin:0 0 6px;">🎨 Pré-remplir avec l'IA, à partir d'un portrait :</p>
+    <div style="display:flex;gap:8px;align-items:center;margin:0 0 6px;">
       <label class="btn btn-ghost" style="cursor:pointer;text-align:center;flex:1;">
-        🎨 Pré-remplir avec l'IA (photo de portrait)
-        <input type="file" id="palette-portrait-input" accept="image/*" style="display:none;">
+        Prendre un portrait
+        <input type="file" id="palette-portrait-camera" accept="image/*" capture="user" style="display:none;">
+      </label>
+      <label class="btn btn-ghost" style="cursor:pointer;text-align:center;flex:1;">
+        Depuis la galerie
+        <input type="file" id="palette-portrait-gallery" accept="image/*" style="display:none;">
       </label>
     </div>
     <p id="palette-portrait-status" style="font-size:.76rem;color:var(--text-dim);margin:0 0 20px;"></p>
@@ -1918,7 +1923,7 @@ function renderColorTierMatrix(containerId){
       <div class="tier-row-head">
         <span class="tier-row-label tier-${t}">${t}</span>
         <span style="font-size:.72rem;color:var(--text-dim);flex:1;">${COLOR_TIER_LABELS[t]}</span>
-        <button type="button" class="color-add-btn" data-tier="${t}" data-container="${containerId}">+ Ajouter</button>
+        <button type="button" class="tier-add-btn" data-tier="${t}" data-container="${containerId}">+ Ajouter</button>
       </div>
       <div class="tier-row-items" data-tier="${t}">
         ${couleurSelectionsRef.filter(it => it.tier === t).map(it => colorItemHtml(it)).join('')}
@@ -1938,7 +1943,7 @@ function renderColorTierMatrix(containerId){
       renderColorTierMatrix(containerId);
     });
   });
-  container.querySelectorAll('.color-add-btn').forEach(btn => {
+  container.querySelectorAll('.tier-add-btn').forEach(btn => {
     btn.addEventListener('click', () => openColorPicker(btn.dataset.tier, containerId));
   });
 }
@@ -2033,10 +2038,8 @@ async function addColorSelection(paletteCouleurId){
 }
 $('#color-picker-close-x').addEventListener('click', () => $('#color-picker-overlay').classList.remove('open'));
 
-$('#palette-portrait-input').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
+async function handlePortraitFile(file){
   const statusEl = $('#palette-portrait-status');
-  e.target.value = '';
   if(!file) return;
   statusEl.textContent = 'Analyse en cours… (peut prendre 20-30 secondes, 52 couleurs à classer)';
   try {
@@ -2067,7 +2070,9 @@ $('#palette-portrait-input').addEventListener('change', async (e) => {
   } catch(err){
     statusEl.textContent = 'Erreur réseau : ' + err.message;
   }
-});
+}
+$('#palette-portrait-camera').addEventListener('change', (e) => { handlePortraitFile(e.target.files[0]); e.target.value = ''; });
+$('#palette-portrait-gallery').addEventListener('change', (e) => { handlePortraitFile(e.target.files[0]); e.target.value = ''; });
 
 // ---------- Onboarding ----------
 const ONBOARDING_STEPS = ['welcome', 'philosophy', 'profil', 'style-tiers', 'systeme', 'tour'];
