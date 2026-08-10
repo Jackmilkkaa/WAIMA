@@ -4,6 +4,15 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.32.0] - 2026-08-10
+
+### Ajouté
+- **Persistance du diagnostic colorimétrique** : le diagnostic (undertone/valeur/chroma/saison dominante) calculé par `analyser-palette` est désormais sauvegardé dans `profiles.diagnostic_teint` (jsonb) au lieu d'être seulement retourné à l'appel. La carte de diagnostic reste donc visible en rouvrant le profil, même sans relancer une analyse — corrige le comportement de la v1.31.0 où elle disparaissait à la fermeture de la modale.
+
+### Modifié
+- Migration additive `profiles.diagnostic_teint` (jsonb) + `profiles.diagnostic_teint_updated_at` (timestamptz).
+- Edge Function `analyser-palette` passée en v3 : upsert du diagnostic dans `profiles` après le classement des couleurs.
+
 ## [1.31.0] - 2026-08-10
 
 ### Ajouté
