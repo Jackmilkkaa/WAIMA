@@ -4,6 +4,15 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.30.0] - 2026-08-10
+
+### Ajouté
+- **Palette de couleurs personnelle**, système séparé de la matrice de compatibilité entre pièces existante (`familles_couleur`) — celle-ci répond à "est-ce que cette couleur me met en valeur", pas "est-ce que deux pièces s'accordent". Vocation à devenir le système central à terme, migration prévue dans un second temps.
+  - **Nouvelle table de référence `palette_couleurs`** : 13 familles de couleur (nomenclature ISCC-NBS, standard établi conjointement par l'Inter-Society Color Council et le National Bureau of Standards américain) × 4 tons saisonniers (Printemps/Été/Automne/Hiver, selon la théorie colorimétrique — undertone chaud/froid, clarté, saturation) = 52 couleurs de référence, avec code hexadécimal. Ajustable en base sans redéploiement.
+  - **Nouvelle matrice tier list S/A/B/D** (Profil), glisser-déposer tactile identique à la matrice de style : S = "j'adore / ça me met en valeur", D = "je déteste / ça ne me va pas". Bouton "+ Ajouter" par ligne, sélecteur groupé par famille avec pastilles de couleur réelles.
+  - **Pré-remplissage IA** ("🎨 Pré-remplir avec l'IA") : nouvelle Edge Function `analyser-palette` — à partir d'une photo de portrait, Claude classe les 52 couleurs en tier S/A/B/D selon une estimation visuelle du teint (undertone, contraste, clarté), explicitement présentée comme un point de départ à ajuster, pas un diagnostic professionnel. Résultat sauvegardé d'un coup (upsert), modifiable ensuite comme n'importe quelle sélection manuelle.
+  - Intégration dans le formulaire d'ajout de pièce et Mercato (alerte si une couleur est en tier D) **pas encore construite** — prévue comme prochaine étape distincte.
+
 ## [1.29.1] - 2026-08-10
 
 ### Corrigé
