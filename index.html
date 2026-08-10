@@ -639,6 +639,18 @@
   .tier-row-label.tier-S{background:#2E7D32;}
   .tier-row-label.tier-A{background:#689F38;}
   .tier-row-label.tier-B{background:#F9A825;}
+  .tier-row-label.tier-D{background:#C62828;}
+  .tier-item.tier-item-couleur{padding:3px 10px 3px 3px;gap:7px;}
+  .color-swatch{width:26px;height:26px;border-radius:50%;flex-shrink:0;border:1px solid rgba(255,255,255,.25);display:block;}
+  .color-picker-group-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;color:var(--text-dim);font-weight:600;margin:12px 0 6px;}
+  .color-picker-group-title:first-child{margin-top:2px;}
+  .color-picker-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .color-picker-swatch-btn{
+    display:flex;align-items:center;gap:7px;background:var(--surface-2);
+    border:1px solid var(--border);border-radius:20px;padding:4px 10px 4px 4px;
+    cursor:pointer;font-family:inherit;color:var(--text);font-size:.76rem;
+  }
+  .color-picker-swatch-btn:hover{border-color:var(--accent);}
   .tier-add-btn{
     margin-left:auto;background:none;border:1px dashed var(--border);border-radius:8px;
     color:var(--accent);font-size:.74rem;padding:5px 10px;cursor:pointer;font-family:inherit;
@@ -862,6 +874,17 @@
     <button type="button" class="btn" id="regen-style-btn" style="margin-bottom:6px;">✨ Régénérer mon style</button>
     <p id="regen-style-status" style="font-size:.76rem;color:var(--text-dim);margin:0 0 20px;"></p>
 
+    <div class="analyse-section-title" style="font-size:.9rem;">Ta palette de couleurs</div>
+    <p class="hint" style="margin:0 0 10px;">Quelles couleurs te mettent en valeur, et lesquelles éviter — indépendant de l'harmonie entre pièces, ça parle de ton teint à toi.</p>
+    <div id="color-tier-matrix" class="tier-matrix"></div>
+    <div style="display:flex;gap:8px;align-items:center;margin:4px 0 6px;">
+      <label class="btn btn-ghost" style="cursor:pointer;text-align:center;flex:1;">
+        🎨 Pré-remplir avec l'IA (photo de portrait)
+        <input type="file" id="palette-portrait-input" accept="image/*" style="display:none;">
+      </label>
+    </div>
+    <p id="palette-portrait-status" style="font-size:.76rem;color:var(--text-dim);margin:0 0 20px;"></p>
+
     <div class="modal-actions">
       <button class="btn btn-ghost" id="replay-onboarding">Relancer le tutoriel</button>
     </div>
@@ -889,6 +912,16 @@
       <input type="file" id="tier-picker-photo-input" accept="image/*" multiple style="display:none;">
     </label>
     <p id="tier-picker-status" style="font-size:.76rem;color:var(--text-dim);margin-top:8px;"></p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="color-picker-overlay">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-sticky-header">
+      <div><h2 style="font-size:1.1rem;">Ajouter une couleur à ce tier</h2></div>
+      <button class="modal-close-x" id="color-picker-close-x">✕</button>
+    </div>
+    <div id="color-picker-list"></div>
   </div>
 </div>
 
@@ -1475,6 +1508,8 @@ async function loadProfile(){
   await loadStylePhotos();
   await loadMotsStyle();
   await loadStyleSelections();
+  await loadPaletteCouleurs();
+  await loadCouleurSelections();
 }
 
 async function loadStylePhotos(){
@@ -1546,6 +1581,8 @@ $('#open-profile').addEventListener('click', () => {
   renderTierMatrix('profile-tier-matrix');
   renderStyleDescriptionUI();
   updateRegenReadiness();
+  renderColorTierMatrix('color-tier-matrix');
+  $('#palette-portrait-status').textContent = '';
   $('#profile-overlay').classList.add('open');
 });
 $('#profile-close-x').addEventListener('click', () => $('#profile-overlay').classList.remove('open'));
@@ -1838,6 +1875,199 @@ async function regenerateStyle(){
 }
 
 $('#regen-style-btn').addEventListener('click', regenerateStyle);
+
+// ---------- Matrice tier list de palette couleurs (S/A/B/D) — Profil uniquement ----------
+let paletteCouleursRef = [];
+let couleurSelectionsRef = [];
+let currentColorAddTarget = null; // tier
+let colorDragState = null;
+
+async function loadPaletteCouleurs(){
+  const { data } = await supabase.from('palette_couleurs').select('*').order('ordre');
+  paletteCouleursRef = data || [];
+}
+async function loadCouleurSelections(){
+  const { data } = await supabase.from('couleur_selections')
+    .select('*, palette_couleurs(famille, saison, libelle, hex)')
+    .eq('user_id', currentUserId)
+    .order('ordre');
+  couleurSelectionsRef = data || [];
+}
+
+const COLOR_TIER_LABELS = {
+  S: "J'adore / ça me met en valeur",
+  A: 'Ça me va bien',
+  B: 'Neutre',
+  D: 'Je déteste / ça ne me va pas',
+};
+
+function colorItemHtml(item){
+  const info = item.palette_couleurs;
+  return `<div class="tier-item tier-item-couleur" data-id="${item.id}">
+    <span class="color-swatch" style="background:${escapeHtml(info?.hex || '#888')}"></span>
+    <span>${escapeHtml(info?.libelle || '')}</span>
+    <button type="button" class="tier-item-remove" data-id="${item.id}" title="Retirer">✕</button>
+  </div>`;
+}
+
+function renderColorTierMatrix(containerId){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = ['S','A','B','D'].map(t => `
+    <div class="tier-row" data-tier="${t}">
+      <div class="tier-row-head">
+        <span class="tier-row-label tier-${t}">${t}</span>
+        <span style="font-size:.72rem;color:var(--text-dim);flex:1;">${COLOR_TIER_LABELS[t]}</span>
+        <button type="button" class="color-add-btn" data-tier="${t}" data-container="${containerId}">+ Ajouter</button>
+      </div>
+      <div class="tier-row-items" data-tier="${t}">
+        ${couleurSelectionsRef.filter(it => it.tier === t).map(it => colorItemHtml(it)).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('.tier-item').forEach(el => {
+    const item = couleurSelectionsRef.find(i => String(i.id) === el.dataset.id);
+    if(item) attachColorItemDrag(el, item, containerId);
+  });
+  container.querySelectorAll('.tier-item-remove').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await supabase.from('couleur_selections').delete().eq('id', btn.dataset.id);
+      couleurSelectionsRef = couleurSelectionsRef.filter(i => String(i.id) !== btn.dataset.id);
+      renderColorTierMatrix(containerId);
+    });
+  });
+  container.querySelectorAll('.color-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => openColorPicker(btn.dataset.tier, containerId));
+  });
+}
+
+async function updateColorTier(id, tier){
+  await supabase.from('couleur_selections').update({ tier }).eq('id', id);
+  const item = couleurSelectionsRef.find(i => String(i.id) === String(id));
+  if(item) item.tier = tier;
+}
+
+function attachColorItemDrag(el, item, containerId){
+  el.addEventListener('pointerdown', (e) => {
+    if(e.target.closest('.tier-item-remove')) return;
+    e.preventDefault();
+    const rect = el.getBoundingClientRect();
+    const ghost = el.cloneNode(true);
+    ghost.classList.add('tier-drag-ghost');
+    ghost.style.width = rect.width + 'px';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    document.body.appendChild(ghost);
+    colorDragState = {
+      itemId: item.id, containerId, ghost, pointerId: e.pointerId,
+      offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top,
+      sourceEl: el
+    };
+    el.classList.add('tier-item-source-hidden');
+    el.setPointerCapture(e.pointerId);
+  });
+
+  el.addEventListener('pointermove', (e) => {
+    if(!colorDragState || colorDragState.pointerId !== e.pointerId) return;
+    colorDragState.ghost.style.left = (e.clientX - colorDragState.offsetX) + 'px';
+    colorDragState.ghost.style.top = (e.clientY - colorDragState.offsetY) + 'px';
+    clearDropHighlight(containerId);
+    const row = dropRowAt(e.clientX, e.clientY, containerId);
+    if(row) row.classList.add('tier-row-hover');
+  });
+
+  const finishDrag = async (e) => {
+    if(!colorDragState || colorDragState.pointerId !== e.pointerId) return;
+    const row = dropRowAt(e.clientX, e.clientY, containerId);
+    const dropTier = row ? row.dataset.tier : null;
+    colorDragState.ghost.remove();
+    colorDragState.sourceEl.classList.remove('tier-item-source-hidden');
+    clearDropHighlight(containerId);
+    colorDragState = null;
+    if(dropTier && dropTier !== item.tier){
+      await updateColorTier(item.id, dropTier);
+      renderColorTierMatrix(containerId);
+    }
+  };
+  el.addEventListener('pointerup', finishDrag);
+  el.addEventListener('pointercancel', finishDrag);
+}
+
+function openColorPicker(tier, containerId){
+  currentColorAddTarget = { tier, containerId };
+  const usedIds = new Set(couleurSelectionsRef.map(i => i.palette_couleur_id));
+  const available = paletteCouleursRef.filter(p => !usedIds.has(p.id));
+  const groups = {};
+  available.forEach(p => { (groups[p.famille] = groups[p.famille] || []).push(p); });
+  const list = $('#color-picker-list');
+  if(available.length === 0){
+    list.innerHTML = `<p class="hint" style="margin:0;">Toutes les couleurs de la palette sont déjà placées.</p>`;
+  } else {
+    list.innerHTML = Object.keys(groups).map(fam => `
+      <div class="color-picker-group-title">${escapeHtml(fam)}</div>
+      <div class="color-picker-row">
+        ${groups[fam].map(p => `
+          <button type="button" class="color-picker-swatch-btn" data-id="${p.id}">
+            <span class="color-swatch" style="width:18px;height:18px;background:${escapeHtml(p.hex)}"></span>
+            ${escapeHtml(p.saison)}
+          </button>
+        `).join('')}
+      </div>
+    `).join('');
+    list.querySelectorAll('.color-picker-swatch-btn').forEach(btn => {
+      btn.addEventListener('click', () => addColorSelection(parseInt(btn.dataset.id)));
+    });
+  }
+  $('#color-picker-overlay').classList.add('open');
+}
+
+async function addColorSelection(paletteCouleurId){
+  if(!currentColorAddTarget) return;
+  const { tier, containerId } = currentColorAddTarget;
+  await supabase.from('couleur_selections').insert({ user_id: currentUserId, palette_couleur_id: paletteCouleurId, tier });
+  await loadCouleurSelections();
+  renderColorTierMatrix(containerId);
+  $('#color-picker-overlay').classList.remove('open');
+}
+$('#color-picker-close-x').addEventListener('click', () => $('#color-picker-overlay').classList.remove('open'));
+
+$('#palette-portrait-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  const statusEl = $('#palette-portrait-status');
+  e.target.value = '';
+  if(!file) return;
+  statusEl.textContent = 'Analyse en cours… (peut prendre 20-30 secondes, 52 couleurs à classer)';
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/analyser-palette`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': SUPABASE_KEY
+      },
+      body: JSON.stringify({ image_base64: base64, mime_type: file.type || 'image/jpeg' })
+    });
+    const data = await res.json();
+    if(!res.ok || data.error){
+      statusEl.textContent = 'Erreur : ' + (data.error || res.status);
+      return;
+    }
+    await loadCouleurSelections();
+    renderColorTierMatrix('color-tier-matrix');
+    statusEl.textContent = `${data.result.count} couleurs classées — ajuste selon ton ressenti réel.`;
+  } catch(err){
+    statusEl.textContent = 'Erreur réseau : ' + err.message;
+  }
+});
 
 // ---------- Onboarding ----------
 const ONBOARDING_STEPS = ['welcome', 'philosophy', 'profil', 'style-tiers', 'systeme', 'tour'];
