@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.30.1] - 2026-08-10
+
+### Corrigé
+- **Bouton "+ Ajouter" de la matrice couleur pas stylé** : utilisait une classe CSS différente (`color-add-btn`) jamais définie, au lieu de réutiliser `tier-add-btn` comme la matrice de style. Incohérence visuelle corrigée.
+- **Pré-remplissage IA de la palette ne permettait pas de prendre une photo en direct** : un seul input générique sans l'attribut `capture`, ouvrant systématiquement la galerie selon les navigateurs. Remplacé par deux boutons séparés ("Prendre un portrait" avec `capture="user"` — caméra frontale — et "Depuis la galerie"), même principe que le formulaire d'ajout de pièce.
+
 ## [1.30.0] - 2026-08-10
 
 ### Ajouté
