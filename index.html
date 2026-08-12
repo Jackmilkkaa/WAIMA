@@ -2048,6 +2048,8 @@ function openColorPicker(tier, containerId){
 function renderColorPickerList(query){
   const usedIds = new Set(couleurSelectionsRef.map(i => i.palette_couleur_id));
   const q = (query || '').trim().toLowerCase();
+  const familyTotals = {};
+  paletteCouleursRef.forEach(p => { familyTotals[p.famille] = (familyTotals[p.famille] || 0) + 1; });
   const available = paletteCouleursRef.filter(p => {
     if(usedIds.has(p.id)) return false;
     if(!q) return true;
@@ -2068,11 +2070,12 @@ function renderColorPickerList(query){
       ${groups[fam].map(p => {
         const aliases = paletteAliasRef[p.id] || [];
         const aliasPreview = aliases.slice(0, 3).join(', ');
+        const showSaison = familyTotals[p.famille] > 1;
         return `
         <button type="button" class="color-picker-swatch-btn" data-id="${p.id}" title="${escapeHtml(aliases.length ? `${p.libelle} — aussi appelé : ${aliases.join(', ')}` : p.libelle)}">
           <span class="color-swatch" style="width:18px;height:18px;background:${escapeHtml(p.hex)}"></span>
           <span>
-            <span style="display:block;">${escapeHtml(p.saison)}</span>
+            ${showSaison ? `<span style="display:block;">${escapeHtml(p.saison)}</span>` : ''}
             ${aliasPreview ? `<span style="display:block;font-size:.68rem;color:var(--text-dim);">${escapeHtml(aliasPreview)}</span>` : ''}
           </span>
         </button>
