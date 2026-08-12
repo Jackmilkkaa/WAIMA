@@ -4,6 +4,13 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.33.0] - 2026-08-12
+
+### Ajouté
+- **Alias sémantiques pour les 52 couleurs de référence** : nouvelle table `palette_couleur_alias` (150 alias, ~3 par couleur) reliant chaque nuance canonique à des noms courants du vocabulaire mode/vestiaire (ex : cognac, kaki, greige, navy, taupe...). Objectif : retrouver facilement la bonne référence même quand le nom utilisé sur une pièce ou une fiche produit diffère du libellé canonique.
+- **Recherche dans le sélecteur de palette** : un champ de recherche filtre désormais les couleurs disponibles par libellé canonique ou par alias (ex : taper "cognac" retrouve "Brun Automne (profond)" et "Brun Printemps (camel)").
+- **Tooltip alias** : survol d'une pastille de couleur (dans la matrice de tier list ou le sélecteur) affiche ses noms alternatifs.
+
 ## [1.32.0] - 2026-08-10
 
 ### Ajouté
