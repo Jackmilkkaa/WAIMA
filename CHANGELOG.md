@@ -4,6 +4,13 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.35.0] - 2026-08-12
+
+### Ajouté
+- **Colonne `wardrobe_items.palette_couleur_id`** : les 87 pièces de la garde-robe sont désormais reliées à une des 42 couleurs de référence (correspondance validée manuellement, voir table de correspondance dans le projet).
+- **Détail d'une pièce** : la ligne Couleur affiche maintenant la teinte de référence associée (pastille + libellé + saison + hex + alias), en plus du libellé texte d'origine.
+- **Analyse > Composition** : le graphique "Couleurs dominantes" regroupe maintenant par famille de la palette de référence (12 familles) au lieu de l'ancienne nomenclature garde-robe à 11 familles. Nouveau graphique "Saison colorimétrique de la garde-robe" (Printemps/Été/Automne/Hiver) montrant la répartition des pièces selon leur alignement avec le système de diagnostic teint.
+
 ## [1.34.0] - 2026-08-12
 
 ### Modifié — simplification de la palette colorimétrique (52 → 42 couleurs)
