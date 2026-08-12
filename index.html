@@ -999,6 +999,11 @@
           <canvas id="chart-couleurs"></canvas>
           <div class="chart-detail-list" id="detail-couleurs"></div>
         </div>
+        <div class="chart-card" data-card="saison-couleur">
+          <h3><span>Saison colorimétrique de la garde-robe</span><button class="chart-expand-btn" data-card="saison-couleur" title="Plein écran">⤢</button></h3>
+          <canvas id="chart-saison-couleur"></canvas>
+          <div class="chart-detail-list" id="detail-saison-couleur"></div>
+        </div>
         <div class="chart-card" data-card="qualite">
           <h3><span>Répartition Qualité</span><button class="chart-expand-btn" data-card="qualite" title="Plein écran">⤢</button></h3>
           <canvas id="chart-qualite"></canvas>
@@ -2486,7 +2491,8 @@ async function loadItems(){
       f_attachement:echelle_attachement(libelle, couleur),
       f_polyvalence:echelle_polyvalence(libelle, couleur),
       f_premium:echelle_premium(libelle, couleur),
-      f_qualite:echelle_qualite(libelle, couleur)
+      f_qualite:echelle_qualite(libelle, couleur),
+      couleur_ref:palette_couleurs(famille, saison, libelle, hex)
     `);
   if(error){
     $('#items-container').innerHTML = `<div class="empty-state">Erreur de chargement : ${error.message}</div>`;
@@ -2684,6 +2690,15 @@ function tensionBadge(it){
   return `<span class="tension-icon ${t.type}" title="${escapeHtml(t.label)} — ${escapeHtml(t.detail)}">${icon}</span>`;
 }
 
+function colorRefHtml(it){
+  const ref = it.couleur_ref;
+  if(!ref) return '';
+  const aliases = paletteAliasRef[it.palette_couleur_id] || [];
+  const saisonTxt = ref.saison ? ` · ${escapeHtml(ref.saison)}` : '';
+  const aliasTxt = aliases.length ? ` · alias : ${escapeHtml(aliases.join(', '))}` : '';
+  return ` <span class="color-swatch" style="display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;background:${escapeHtml(ref.hex)};border:1px solid var(--border-strong);"></span> <span style="color:var(--text-dim);font-size:.82rem;">${escapeHtml(ref.libelle)}${saisonTxt} · ${escapeHtml(ref.hex)}${aliasTxt}</span>`;
+}
+
 function render(){
   const items = getFiltered();
   $('#item-count').textContent = `${items.length} pièce${items.length>1?'s':''}`;
@@ -2723,7 +2738,7 @@ function render(){
           ${pill(it.f_premium, 'Premium '+it.premium_percu)}
           ${pill(it.f_qualite, 'Qualité '+it.qualite_percue)}
         </div>
-        <div class="detail-row"><strong>Couleur :</strong> ${escapeHtml(it.couleur_principale || '—')}</div>
+        <div class="detail-row"><strong>Couleur :</strong> ${escapeHtml(it.couleur_principale || '—')}${colorRefHtml(it)}</div>
         <div class="detail-row"><strong>Matière :</strong> ${escapeHtml(it.matiere || '—')}</div>
         <div class="detail-row"><strong>Texture :</strong> ${escapeHtml(it.texture || '—')}</div>
         <div class="detail-row"><strong>Saison :</strong> ${escapeHtml(saisonTxt || '—')}</div>
@@ -3322,10 +3337,24 @@ function buildChartAdnSecondaire(activeItems){
 
 // ---------- Onglet Composition ----------
 function buildChartCouleurs(activeItems){
-  const grouped = groupBy(activeItems, it => it.famille_couleur);
+  const grouped = groupBy(activeItems, it => it.couleur_ref ? it.couleur_ref.famille : (it.famille_couleur ? `${it.famille_couleur} (à relier)` : null));
   const sorted = [...grouped.entries()].sort((a,b) => b[1].length - a[1].length);
-  const entries = sorted.map(([k, items]) => ({ label: k, color: (famillesCouleurRef.find(f => f.nom === k) || {}).couleur || '#c17f42', items }));
+  const entries = sorted.map(([k, items]) => {
+    const first = items[0];
+    const color = first?.couleur_ref?.hex || (famillesCouleurRef.find(f => f.nom === k) || {}).couleur || '#c17f42';
+    return { label: k || 'Non classé', color, items };
+  });
   renderBarChart('couleurs', '#chart-couleurs', entries, { rotateLabels: true });
+}
+
+function buildChartSaisonCouleur(activeItems){
+  const SAISON_COLORS = { Printemps: '#7CB342', Été: '#3FA9F5', Automne: '#B75B22', Hiver: '#6B2F8C' };
+  const withRef = activeItems.filter(it => it.couleur_ref && it.couleur_ref.saison);
+  const grouped = groupBy(withRef, it => it.couleur_ref.saison);
+  const entries = ['Printemps', 'Été', 'Automne', 'Hiver'].map(s => ({
+    label: s, color: SAISON_COLORS[s], items: grouped.get(s) || []
+  }));
+  renderBarChart('saison-couleur', '#chart-saison-couleur', entries, { isPie: true });
 }
 
 function buildEchelleChart(cardKey, canvasSelector, activeItems, itemField, echelleKey){
@@ -3430,6 +3459,7 @@ const TAB_BUILDERS = {
     marqueDrillLevel = null;
     buildChartCategorie(activeItems);
     buildChartCouleurs(activeItems);
+    buildChartSaisonCouleur(activeItems);
     buildEchelleChart('qualite', '#chart-qualite', activeItems, 'qualite_percue', 'qualite');
     buildEchelleChart('premium', '#chart-premium', activeItems, 'premium_percu', 'premium');
     buildEchelleChart('formalite', '#chart-formalite', activeItems, 'formalite', 'formalite');
