@@ -930,6 +930,8 @@
       <div><h2 style="font-size:1.1rem;">Ajouter une couleur à ce tier</h2></div>
       <button class="modal-close-x" id="color-picker-close-x">✕</button>
     </div>
+    <input type="text" id="color-picker-search" placeholder="Chercher un nom (ex : cognac, kaki, navy…)"
+      style="width:100%;box-sizing:border-box;margin:0 0 14px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input,transparent);font-size:.86rem;color:var(--text);">
     <div id="color-picker-list"></div>
   </div>
 </div>
@@ -1524,6 +1526,7 @@ async function loadProfile(){
   await loadMotsStyle();
   await loadStyleSelections();
   await loadPaletteCouleurs();
+  await loadPaletteAlias();
   await loadCouleurSelections();
 }
 
@@ -1908,12 +1911,20 @@ $('#regen-style-btn').addEventListener('click', regenerateStyle);
 // ---------- Matrice tier list de palette couleurs (S/A/B/D) — Profil uniquement ----------
 let paletteCouleursRef = [];
 let couleurSelectionsRef = [];
+let paletteAliasRef = {}; // palette_couleur_id -> [alias, ...]
 let currentColorAddTarget = null; // tier
 let colorDragState = null;
 
 async function loadPaletteCouleurs(){
   const { data } = await supabase.from('palette_couleurs').select('*').order('ordre');
   paletteCouleursRef = data || [];
+}
+async function loadPaletteAlias(){
+  const { data } = await supabase.from('palette_couleur_alias').select('palette_couleur_id, alias');
+  paletteAliasRef = {};
+  (data || []).forEach(row => {
+    (paletteAliasRef[row.palette_couleur_id] = paletteAliasRef[row.palette_couleur_id] || []).push(row.alias);
+  });
 }
 async function loadCouleurSelections(){
   const { data } = await supabase.from('couleur_selections')
@@ -1932,7 +1943,9 @@ const COLOR_TIER_LABELS = {
 
 function colorItemHtml(item){
   const info = item.palette_couleurs;
-  return `<div class="tier-item tier-item-couleur" data-id="${item.id}">
+  const aliases = paletteAliasRef[item.palette_couleur_id];
+  const tooltip = aliases && aliases.length ? `${info?.libelle || ''} — aussi appelé : ${aliases.join(', ')}` : (info?.libelle || '');
+  return `<div class="tier-item tier-item-couleur" data-id="${item.id}" title="${escapeHtml(tooltip)}">
     <span class="color-swatch" style="background:${escapeHtml(info?.hex || '#888')}"></span>
     <span>${escapeHtml(info?.libelle || '')}</span>
     <button type="button" class="tier-item-remove" data-id="${item.id}" title="Retirer">✕</button>
@@ -2026,31 +2039,52 @@ function attachColorItemDrag(el, item, containerId){
 
 function openColorPicker(tier, containerId){
   currentColorAddTarget = { tier, containerId };
+  $('#color-picker-search').value = '';
+  renderColorPickerList('');
+  $('#color-picker-overlay').classList.add('open');
+  setTimeout(() => $('#color-picker-search').focus(), 50);
+}
+
+function renderColorPickerList(query){
   const usedIds = new Set(couleurSelectionsRef.map(i => i.palette_couleur_id));
-  const available = paletteCouleursRef.filter(p => !usedIds.has(p.id));
+  const q = (query || '').trim().toLowerCase();
+  const available = paletteCouleursRef.filter(p => {
+    if(usedIds.has(p.id)) return false;
+    if(!q) return true;
+    const aliases = paletteAliasRef[p.id] || [];
+    const haystack = [p.famille, p.saison, p.libelle, ...aliases].join(' ').toLowerCase();
+    return haystack.includes(q);
+  });
   const groups = {};
   available.forEach(p => { (groups[p.famille] = groups[p.famille] || []).push(p); });
   const list = $('#color-picker-list');
   if(available.length === 0){
-    list.innerHTML = `<p class="hint" style="margin:0;">Toutes les couleurs de la palette sont déjà placées.</p>`;
-  } else {
-    list.innerHTML = Object.keys(groups).map(fam => `
-      <div class="color-picker-group-title">${escapeHtml(fam)}</div>
-      <div class="color-picker-row">
-        ${groups[fam].map(p => `
-          <button type="button" class="color-picker-swatch-btn" data-id="${p.id}">
-            <span class="color-swatch" style="width:18px;height:18px;background:${escapeHtml(p.hex)}"></span>
-            ${escapeHtml(p.saison)}
-          </button>
-        `).join('')}
-      </div>
-    `).join('');
-    list.querySelectorAll('.color-picker-swatch-btn').forEach(btn => {
-      btn.addEventListener('click', () => addColorSelection(parseInt(btn.dataset.id)));
-    });
+    list.innerHTML = `<p class="hint" style="margin:0;">${q ? 'Aucune couleur ne correspond à cette recherche.' : 'Toutes les couleurs de la palette sont déjà placées.'}</p>`;
+    return;
   }
-  $('#color-picker-overlay').classList.add('open');
+  list.innerHTML = Object.keys(groups).map(fam => `
+    <div class="color-picker-group-title">${escapeHtml(fam)}</div>
+    <div class="color-picker-row">
+      ${groups[fam].map(p => {
+        const aliases = paletteAliasRef[p.id] || [];
+        const aliasPreview = aliases.slice(0, 3).join(', ');
+        return `
+        <button type="button" class="color-picker-swatch-btn" data-id="${p.id}" title="${escapeHtml(aliases.length ? `${p.libelle} — aussi appelé : ${aliases.join(', ')}` : p.libelle)}">
+          <span class="color-swatch" style="width:18px;height:18px;background:${escapeHtml(p.hex)}"></span>
+          <span>
+            <span style="display:block;">${escapeHtml(p.saison)}</span>
+            ${aliasPreview ? `<span style="display:block;font-size:.68rem;color:var(--text-dim);">${escapeHtml(aliasPreview)}</span>` : ''}
+          </span>
+        </button>
+      `;}).join('')}
+    </div>
+  `).join('');
+  list.querySelectorAll('.color-picker-swatch-btn').forEach(btn => {
+    btn.addEventListener('click', () => addColorSelection(parseInt(btn.dataset.id)));
+  });
 }
+
+$('#color-picker-search').addEventListener('input', (e) => renderColorPickerList(e.target.value));
 
 async function addColorSelection(paletteCouleurId){
   if(!currentColorAddTarget) return;
