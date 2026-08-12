@@ -1192,10 +1192,6 @@
 
       <div class="form-section-title">Caractéristiques</div>
       <div class="filter-block">
-        <label class="filter-label" for="f-couleur">Couleur principale (texte libre)</label>
-        <input type="text" id="f-couleur">
-      </div>
-      <div class="filter-block">
         <label class="filter-label">Couleur de référence (42)</label>
         <div id="f-couleur-ref-preview" style="margin-bottom:8px;"></div>
         <button type="button" class="btn-ghost" id="f-couleur-ref-pick-btn" style="border-radius:8px;padding:7px 12px;font-size:.82rem;cursor:pointer;">Choisir dans la palette</button>
@@ -1532,12 +1528,14 @@ async function loadProfile(){
     currentDiagnosticTeint = null;
     currentDiagnosticTeintUpdatedAt = null;
   }
-  await loadStylePhotos();
-  await loadMotsStyle();
-  await loadStyleSelections();
-  await loadPaletteCouleurs();
-  await loadPaletteAlias();
-  await loadCouleurSelections();
+  await Promise.all([
+    loadStylePhotos(),
+    loadMotsStyle(),
+    loadStyleSelections(),
+    loadPaletteCouleurs(),
+    loadPaletteAlias(),
+    loadCouleurSelections()
+  ]);
 }
 
 function renderDiagnosticTeintUI(){
@@ -2143,7 +2141,7 @@ function renderFormColorPreview(){
   const saisonTxt = ref.saison ? ` · ${escapeHtml(ref.saison)}` : '';
   const aliasTxt = aliases.length ? ` · alias : ${escapeHtml(aliases.join(', '))}` : '';
   preview.innerHTML = `<span class="color-swatch" style="display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;background:${escapeHtml(ref.hex)};border:1px solid var(--border-strong);"></span>
-    <span style="font-size:.82rem;">${escapeHtml(ref.libelle)}${saisonTxt} · ${escapeHtml(ref.hex)}${aliasTxt}</span>
+    <span style="font-size:.82rem;">${escapeHtml(ref.libelle)}${saisonTxt}${aliasTxt}</span>
     <button type="button" id="f-couleur-ref-clear" style="margin-left:8px;font-size:.75rem;color:var(--text-dim);background:none;border:none;cursor:pointer;text-decoration:underline;">retirer</button>`;
   $('#f-couleur-ref-clear').addEventListener('click', () => { formPaletteCouleurId = null; renderFormColorPreview(); });
 }
@@ -2469,25 +2467,37 @@ function startFormTour(){
 }
 
 async function loadReferenceData(){
-  const { data: roles } = await supabase.from('roles').select('*').order('ordre');
+  const echelleKeys = ['formalite','frequence','attachement','polyvalence','premium','qualite'];
+  const [
+    { data: roles },
+    { data: adn },
+    ...echelleResults
+  ] = await Promise.all([
+    supabase.from('roles').select('*').order('ordre'),
+    supabase.from('adn').select('*'),
+    ...echelleKeys.map(key => supabase.from('echelle_' + key).select('*').order('valeur'))
+  ]);
   rolesRef = roles || [];
-  const { data: adn } = await supabase.from('adn').select('*');
   adnRef = adn || [];
+  echelleKeys.forEach((key, i) => { echelleRef[key] = echelleResults[i].data || []; });
 
-  for(const key of ['formalite','frequence','attachement','polyvalence','premium','qualite']){
-    const table = 'echelle_' + key;
-    const { data: rows } = await supabase.from(table).select('*').order('valeur');
-    echelleRef[key] = rows || [];
-  }
-  const { data: scoreBands } = await supabase.from('echelle_score').select('*').order('borne_min');
+  const [
+    { data: scoreBands },
+    { data: familles },
+    { data: compat },
+    { data: cats },
+    { data: marques }
+  ] = await Promise.all([
+    supabase.from('echelle_score').select('*').order('borne_min'),
+    supabase.from('familles_couleur').select('*'),
+    supabase.from('compatibilite_couleurs').select('*'),
+    supabase.from('categories').select('*'),
+    supabase.from('marques').select('*').order('nom')
+  ]);
   scoreEchelle = scoreBands || [];
-  const { data: familles } = await supabase.from('familles_couleur').select('*');
   famillesCouleurRef = familles || [];
-  const { data: compat } = await supabase.from('compatibilite_couleurs').select('*');
   compatCouleursRef = compat || [];
-  const { data: cats } = await supabase.from('categories').select('*');
   allCategories = cats || [];
-  const { data: marques } = await supabase.from('marques').select('*').order('nom');
   allMarques = marques || [];
 
   const chipContainer = $('#role-chips');
@@ -2740,11 +2750,11 @@ function tensionBadge(it){
 
 function colorRefHtml(it){
   const ref = it.couleur_ref;
-  if(!ref) return '';
+  if(!ref) return ' <span style="color:var(--text-dim);">—</span>';
   const aliases = paletteAliasRef[it.palette_couleur_id] || [];
   const saisonTxt = ref.saison ? ` · ${escapeHtml(ref.saison)}` : '';
   const aliasTxt = aliases.length ? ` · alias : ${escapeHtml(aliases.join(', '))}` : '';
-  return ` <span class="color-swatch" style="display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;background:${escapeHtml(ref.hex)};border:1px solid var(--border-strong);"></span> <span style="color:var(--text-dim);font-size:.82rem;">${escapeHtml(ref.libelle)}${saisonTxt} · ${escapeHtml(ref.hex)}${aliasTxt}</span>`;
+  return ` <span class="color-swatch" style="display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;background:${escapeHtml(ref.hex)};border:1px solid var(--border-strong);"></span> <span style="color:var(--text-dim);font-size:.82rem;">${escapeHtml(ref.libelle)}${saisonTxt}${aliasTxt}</span>`;
 }
 
 function render(){
@@ -2786,14 +2796,14 @@ function render(){
           ${pill(it.f_premium, 'Premium '+it.premium_percu)}
           ${pill(it.f_qualite, 'Qualité '+it.qualite_percue)}
         </div>
-        <div class="detail-row"><strong>Couleur :</strong> ${escapeHtml(it.couleur_principale || '—')}${colorRefHtml(it)}</div>
+        <div class="detail-row"><strong>Couleur :</strong>${colorRefHtml(it)}</div>
         <div class="detail-row"><strong>Matière :</strong> ${escapeHtml(it.matiere || '—')}</div>
         <div class="detail-row"><strong>Texture :</strong> ${escapeHtml(it.texture || '—')}</div>
         <div class="detail-row"><strong>Saison :</strong> ${escapeHtml(saisonTxt || '—')}</div>
         ${it.prix_achat != null ? `<div class="detail-row"><strong>Prix d'achat :</strong> ${Number(it.prix_achat).toFixed(2)} €</div>` : ''}
         ${it.url_marchand ? `<div class="detail-row"><strong>Lien :</strong> <a href="${escapeHtml(it.url_marchand)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Voir la fiche produit ↗</a></div>` : ''}
+        ${it.adn_dom ? `<div class="detail-row" title="${escapeHtml(adnTooltip(it.adn_dom))}"><strong>ADN dominant :</strong> ${escapeHtml(adnLabel(it.adn_dom))} (${it.intensite_dominant})</div>` : ''}
         ${it.adn_sec ? `<div class="detail-row" title="${escapeHtml(adnTooltip(it.adn_sec))}"><strong>ADN secondaire :</strong> ${escapeHtml(adnLabel(it.adn_sec))} (${it.intensite_secondaire})</div>` : ''}
-        ${it.intensite_dominant != null ? `<div class="detail-row"><strong>Intensité ADN dominant :</strong> ${it.intensite_dominant}</div>` : ''}
         <div class="detail-row"><strong>ID :</strong> ${escapeHtml(it.id)}</div>
         ${it.description_ia ? `<div class="detail-row" style="margin-top:8px;">${escapeHtml(it.description_ia)}</div>` : ''}
         <div class="analyse-section-title collapsible match-toggle" style="margin:14px 0 6px;font-size:.85rem;" data-id="${escapeHtml(it.id)}">
@@ -3661,7 +3671,6 @@ function applySelectWithNew(selectId, newInputId, value, existingValues){
 function applyAiResultToForm(r){
   if(r.id_suggere && !editingId && !$('#f-id').value.trim()) $('#f-id').value = r.id_suggere;
   if(r.libelle) $('#f-libelle').value = r.libelle;
-  if(r.couleur_principale) $('#f-couleur').value = r.couleur_principale;
   if(r.matiere) $('#f-matiere').value = r.matiere;
   if(r.texture) $('#f-texture').value = r.texture;
   if(r.description_ia) $('#f-description').value = r.description_ia;
@@ -3875,7 +3884,6 @@ function openEditModal(it){
   $('#f-marque-new').style.display = (!marqueExists && it.marque) ? 'block' : 'none';
   if(!marqueExists && it.marque) $('#f-marque-new').value = it.marque.nom;
 
-  $('#f-couleur').value = it.couleur_principale || '';
   formPaletteCouleurId = it.palette_couleur_id || null;
   renderFormColorPreview();
   $('#f-matiere').value = it.matiere || '';
@@ -3968,7 +3976,6 @@ $('#item-form').addEventListener('submit', async (e) => {
     categorie_id, marque_id,
     photo_url: currentPhotoUrl,
     photo_fit: currentPhotoFit,
-    couleur_principale: $('#f-couleur').value.trim() || null,
     palette_couleur_id: formPaletteCouleurId,
     matiere: $('#f-matiere').value.trim() || null,
     texture: $('#f-texture').value.trim() || null,
