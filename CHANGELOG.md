@@ -4,6 +4,16 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.34.0] - 2026-08-12
+
+### Modifié — simplification de la palette colorimétrique (52 → 42 couleurs)
+Suite à un retour terrain (plusieurs familles trop proches à l'œil, notamment Vert/Vert-jaune/Olive et les 4 nuances de Noir) :
+- **Vert-jaune / Chartreuse supprimée**, fusionnée dans Vert. Vert Printemps prend une nouvelle teinte dérivée (plus tendre, plus claire que Vert Été).
+- **Marron / Brun enrichi** : l'ancienne nuance "camel" passe de Printemps à Été ; une nouvelle nuance Printemps plus claire (ex-"Blanc Automne avoine", reclassée) comble le manque de clair signalé.
+- **Blanc et Noir réduits à une seule nuance chacun** (les déclinaisons saisonnières étaient indiscernables à l'œil en usage réel). Le sélecteur de couleur n'affiche plus de sous-titre saison pour ces deux familles.
+- Alias orphelins retirés, quelques-uns redistribués (ex : "beige grisé" déplacé vers Gris Automne taupe, "chartreuse"/"vert amande" vers le nouveau Vert Printemps).
+- Les sélections S/A/B/D existantes liées aux teintes supprimées ont été purgées ; les teintes conservées gardent leur tier d'origine.
+
 ## [1.33.0] - 2026-08-12
 
 ### Ajouté
