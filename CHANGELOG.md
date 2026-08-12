@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.36.1] - 2026-08-12
+
+### Corrigé
+- La modale de sélection de couleur passait derrière la fiche d'ajout/édition de pièce (z-index insuffisant, la modale couleur étant plus tôt dans le DOM). Elle a maintenant un z-index dédié, au-dessus de toutes les autres modales.
+- Titre de la modale désormais contextuel : "Ajouter une couleur à ce tier" depuis le profil, "Choisir une couleur de référence" depuis la fiche pièce — au lieu d'un titre fixe qui ne correspondait plus à l'usage.
+
 ## [1.36.0] - 2026-08-12
 
 ### Ajouté
