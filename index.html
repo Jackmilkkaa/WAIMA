@@ -924,10 +924,10 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="color-picker-overlay">
+<div class="modal-overlay" id="color-picker-overlay" style="z-index:35;">
   <div class="modal" style="max-width:420px;">
     <div class="modal-sticky-header">
-      <div><h2 style="font-size:1.1rem;">Ajouter une couleur à ce tier</h2></div>
+      <div><h2 id="color-picker-title" style="font-size:1.1rem;">Ajouter une couleur à ce tier</h2></div>
       <button class="modal-close-x" id="color-picker-close-x">✕</button>
     </div>
     <input type="text" id="color-picker-search" placeholder="Chercher un nom (ex : cognac, kaki, navy…)"
@@ -2051,6 +2051,7 @@ function attachColorItemDrag(el, item, containerId){
 function openColorPicker(tier, containerId){
   colorPickerMode = 'tier';
   currentColorAddTarget = { tier, containerId };
+  $('#color-picker-title').textContent = 'Ajouter une couleur à ce tier';
   $('#color-picker-search').value = '';
   renderColorPickerList('');
   $('#color-picker-overlay').classList.add('open');
@@ -2059,6 +2060,7 @@ function openColorPicker(tier, containerId){
 
 function openColorPickerForForm(){
   colorPickerMode = 'form';
+  $('#color-picker-title').textContent = 'Choisir une couleur de référence';
   $('#color-picker-search').value = '';
   renderColorPickerList('');
   $('#color-picker-overlay').classList.add('open');
