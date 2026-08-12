@@ -4,6 +4,16 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.37.0] - 2026-08-12
+
+### Corrigé
+- **ADN dominant manquant dans le détail d'une pièce** : la ligne "Intensité ADN dominant" s'affichait sans jamais nommer l'ADN dominant lui-même (seul l'ADN secondaire était nommé). Les deux lignes suivent maintenant le même format : "ADN dominant : nom (intensité)" / "ADN secondaire : nom (intensité)".
+- **Lenteur au chargement de la liste principale** : `loadProfile()` et `loadReferenceData()` enchaînaient une vingtaine de requêtes Supabase en séquence (chacune attendant la précédente) avant que la liste ne commence à s'afficher. Toutes les requêtes indépendantes sont désormais lancées en parallèle (`Promise.all`), ce qui réduit le temps de chargement initial à la durée de la requête la plus longue plutôt qu'à leur somme.
+
+### Retiré
+- **Champ "Couleur principale" (texte libre)** retiré du formulaire d'ajout/édition et de l'affichage détail, devenu redondant depuis la liaison de toutes les pièces à la palette de 42 couleurs de référence. La colonne `couleur_principale` reste en base (historique, recherche texte) mais n'est plus éditable ni affichée.
+- **Hex retiré de l'affichage couleur** (détail pièce et aperçu formulaire) : seule la pastille visuelle est conservée, avec libellé/saison/alias — le code hex n'apportait rien à l'usage.
+
 ## [1.36.1] - 2026-08-12
 
 ### Corrigé
