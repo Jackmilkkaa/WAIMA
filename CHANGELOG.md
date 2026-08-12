@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.36.0] - 2026-08-12
+
+### Ajouté
+- **Sélecteur de couleur de référence dans le formulaire pièce** : le champ Couleur principale reste un texte libre, mais un nouveau bloc "Couleur de référence (42)" permet de lier explicitement une pièce (ajout ou édition) à une des 42 couleurs de la palette, via le même sélecteur que la palette teint (recherche par nom ou alias, aperçu pastille + libellé + saison + hex + alias). Auparavant cette liaison n'était possible qu'en base directement.
+
 ## [1.35.0] - 2026-08-12
 
 ### Ajouté
