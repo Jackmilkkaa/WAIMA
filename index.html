@@ -1192,8 +1192,13 @@
 
       <div class="form-section-title">Caractéristiques</div>
       <div class="filter-block">
-        <label class="filter-label" for="f-couleur">Couleur principale</label>
+        <label class="filter-label" for="f-couleur">Couleur principale (texte libre)</label>
         <input type="text" id="f-couleur">
+      </div>
+      <div class="filter-block">
+        <label class="filter-label">Couleur de référence (42)</label>
+        <div id="f-couleur-ref-preview" style="margin-bottom:8px;"></div>
+        <button type="button" class="btn-ghost" id="f-couleur-ref-pick-btn" style="border-radius:8px;padding:7px 12px;font-size:.82rem;cursor:pointer;">Choisir dans la palette</button>
       </div>
       <div class="filter-block">
         <label class="filter-label" for="f-matiere">Matière</label>
@@ -1918,6 +1923,7 @@ let paletteCouleursRef = [];
 let couleurSelectionsRef = [];
 let paletteAliasRef = {}; // palette_couleur_id -> [alias, ...]
 let currentColorAddTarget = null; // tier
+let colorPickerMode = 'tier'; // 'tier' | 'form'
 let colorDragState = null;
 
 async function loadPaletteCouleurs(){
@@ -2043,6 +2049,7 @@ function attachColorItemDrag(el, item, containerId){
 }
 
 function openColorPicker(tier, containerId){
+  colorPickerMode = 'tier';
   currentColorAddTarget = { tier, containerId };
   $('#color-picker-search').value = '';
   renderColorPickerList('');
@@ -2050,8 +2057,16 @@ function openColorPicker(tier, containerId){
   setTimeout(() => $('#color-picker-search').focus(), 50);
 }
 
+function openColorPickerForForm(){
+  colorPickerMode = 'form';
+  $('#color-picker-search').value = '';
+  renderColorPickerList('');
+  $('#color-picker-overlay').classList.add('open');
+  setTimeout(() => $('#color-picker-search').focus(), 50);
+}
+
 function renderColorPickerList(query){
-  const usedIds = new Set(couleurSelectionsRef.map(i => i.palette_couleur_id));
+  const usedIds = colorPickerMode === 'tier' ? new Set(couleurSelectionsRef.map(i => i.palette_couleur_id)) : new Set();
   const q = (query || '').trim().toLowerCase();
   const familyTotals = {};
   paletteCouleursRef.forEach(p => { familyTotals[p.famille] = (familyTotals[p.famille] || 0) + 1; });
@@ -2088,7 +2103,11 @@ function renderColorPickerList(query){
     </div>
   `).join('');
   list.querySelectorAll('.color-picker-swatch-btn').forEach(btn => {
-    btn.addEventListener('click', () => addColorSelection(parseInt(btn.dataset.id)));
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.dataset.id);
+      if(colorPickerMode === 'form') selectColorForForm(id);
+      else addColorSelection(id);
+    });
   });
 }
 
@@ -2102,6 +2121,33 @@ async function addColorSelection(paletteCouleurId){
   renderColorTierMatrix(containerId);
   $('#color-picker-overlay').classList.remove('open');
 }
+
+let formPaletteCouleurId = null;
+function selectColorForForm(paletteCouleurId){
+  formPaletteCouleurId = paletteCouleurId;
+  renderFormColorPreview();
+  $('#color-picker-overlay').classList.remove('open');
+}
+
+function renderFormColorPreview(){
+  const preview = $('#f-couleur-ref-preview');
+  if(!formPaletteCouleurId){
+    preview.innerHTML = `<span style="color:var(--text-dim);font-size:.82rem;">Aucune couleur de référence liée.</span>`;
+    return;
+  }
+  const ref = paletteCouleursRef.find(p => p.id === formPaletteCouleurId);
+  if(!ref){ preview.innerHTML = ''; return; }
+  const aliases = paletteAliasRef[ref.id] || [];
+  const saisonTxt = ref.saison ? ` · ${escapeHtml(ref.saison)}` : '';
+  const aliasTxt = aliases.length ? ` · alias : ${escapeHtml(aliases.join(', '))}` : '';
+  preview.innerHTML = `<span class="color-swatch" style="display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;background:${escapeHtml(ref.hex)};border:1px solid var(--border-strong);"></span>
+    <span style="font-size:.82rem;">${escapeHtml(ref.libelle)}${saisonTxt} · ${escapeHtml(ref.hex)}${aliasTxt}</span>
+    <button type="button" id="f-couleur-ref-clear" style="margin-left:8px;font-size:.75rem;color:var(--text-dim);background:none;border:none;cursor:pointer;text-decoration:underline;">retirer</button>`;
+  $('#f-couleur-ref-clear').addEventListener('click', () => { formPaletteCouleurId = null; renderFormColorPreview(); });
+}
+
+$('#f-couleur-ref-pick-btn').addEventListener('click', openColorPickerForForm);
+
 $('#color-picker-close-x').addEventListener('click', () => $('#color-picker-overlay').classList.remove('open'));
 
 async function handlePortraitFile(file){
@@ -3792,6 +3838,8 @@ function resetForm(){
   $('#ai-analyze-status').textContent = '';
   $('#add-error').textContent = '';
   $$('#item-form .chips .chip').forEach(c => c.classList.remove('active'));
+  formPaletteCouleurId = null;
+  renderFormColorPreview();
 }
 
 $('#add-fab').addEventListener('click', () => {
@@ -3826,6 +3874,8 @@ function openEditModal(it){
   if(!marqueExists && it.marque) $('#f-marque-new').value = it.marque.nom;
 
   $('#f-couleur').value = it.couleur_principale || '';
+  formPaletteCouleurId = it.palette_couleur_id || null;
+  renderFormColorPreview();
   $('#f-matiere').value = it.matiere || '';
   $('#f-texture').value = it.texture || '';
   $('#f-prix').value = it.prix_achat ?? '';
@@ -3917,6 +3967,7 @@ $('#item-form').addEventListener('submit', async (e) => {
     photo_url: currentPhotoUrl,
     photo_fit: currentPhotoFit,
     couleur_principale: $('#f-couleur').value.trim() || null,
+    palette_couleur_id: formPaletteCouleurId,
     matiere: $('#f-matiere').value.trim() || null,
     texture: $('#f-texture').value.trim() || null,
     prix_achat: $('#f-prix').value ? parseFloat($('#f-prix').value) : null,
