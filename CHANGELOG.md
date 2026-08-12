@@ -4,6 +4,12 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.38.0] - 2026-08-12
+
+### Ajouté
+- **Nouvelle famille Bleu marine (4 nuances)** : la palette de 42 couleurs avait un trou identifié par analyse teinte/saturation — aucune nuance froide+profonde+mate ne couvrait le navy ou le denim foncé (le Bleu Hiver existant est trop vif, saturé à 87%, pour représenter un navy réel à 47%). Ajout de Bleu marine Printemps (clair, #7B8FA6), Été (grisé, #8B98A8), Automne (denim, #2C3A4E) et Hiver (navy, #1B2A4A), avec alias (navy, denim foncé, jean délavé, chambray...).
+- **22 pièces réassignées** depuis Bleu Hiver (qui servait d'approximation par défaut) vers la nuance Bleu marine appropriée : les 12 pièces "bleu marine" confirmées vers Hiver (navy), le reste (jeans/denim) réparti Printemps à Automne selon leur profondeur décrite.
+
 ## [1.37.0] - 2026-08-12
 
 ### Corrigé
