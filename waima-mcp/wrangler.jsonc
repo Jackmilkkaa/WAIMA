@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "waima-mcp",
+  "main": "src/index.js",
+  "compatibility_date": "2025-08-01",
+  "observability": {
+    "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "e81e984660484279921cbd6c1cb08a78"
+    }
+  ],
+  "triggers": {
+    "crons": ["17 3 * * *"]
+  }
+}
