@@ -3,6 +3,17 @@
 Toutes les modifications notables de ce projet sont documentées ici.
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/), versionnage [semver](https://semver.org/).
 
+## [0.4.0] — 2026-08-14
+
+### Ajouté
+- Ressources MCP `waima://doctrine` (statique, générique) et `waima://profile` (dynamique,
+  lit `waima.profiles` + stats live de `wardrobe_items`, RLS appliqué par utilisateur).
+- Outils `get_doctrine` et `get_profile` en doublon des ressources ci-dessus : le support
+  du primitive "resources" par les clients MCP (claude.ai en particulier) n'est pas vérifiable
+  depuis une conversation Claude standard, donc on garantit l'accès via `tools/call`
+  (déjà prouvé fonctionnel) en plus d'exposer les ressources pour les clients qui les liraient.
+- `capabilities.resources: {}` déclaré dans la réponse `initialize`.
+
 ## [0.3.0] — 2026-08-14
 
 ### Ajouté

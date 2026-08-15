@@ -133,6 +133,214 @@ async function searchItems(env, accessToken, args) {
   return resp.json();
 }
 
+const RESOURCES = [
+  {
+    uri: "waima://doctrine",
+    name: "Doctrine Waïma",
+    description:
+      "Méthodologie générale du système Waïma : grille de formalité, système de rôles, " +
+      "archétypes ADN, règles budgétaires, grille d'évaluation d'achat. Contenu générique, " +
+      "indépendant de l'utilisateur authentifié.",
+    mimeType: "text/markdown",
+  },
+  {
+    uri: "waima://profile",
+    name: "Profil de l'utilisateur authentifié",
+    description:
+      "Profil de style (diagnostic colorimétrique, description de style) et état actuel de la " +
+      "garde-robe (répartition par rôle, pièces Capitaine) de l'utilisateur connecté. Contenu " +
+      "dynamique, propre à chaque utilisateur.",
+    mimeType: "text/markdown",
+  },
+];
+
+const DOCTRINE_MD = `# Doctrine Waïma — méthodologie générale
+
+Waïma est un système de cohérence personnelle appliqué à la garde-robe : chaque pièce doit
+avoir une fonction, renforcer l'ensemble, et justifier sa place. Question centrale avant tout
+achat : "Est-ce que cette pièce améliore réellement le système global ?"
+
+## Grille de formalité (1 à 5)
+
+1. Ultra casual / week-end décontracté
+2. Casual maîtrisé / Friday propre
+3. Casual business standard
+4. Business structuré
+5. Business strict formel
+
+## Système de rôles (centralité décroissante)
+
+1. **Capitaine** — pièce identitaire, fondation de l'image.
+2. **Titulaire** — pilier fiable, porté très régulièrement.
+3. **Rotation** — bonne pièce, non essentielle.
+4. **Remplaçant** — usage ponctuel, mission spécifique.
+5. **Transfert** — à challenger : désalignée ou redondante, décision pas encore tranchée.
+6. **Spectateur** — usage week-end/vacances, hors périmètre professionnel actif.
+7. **Retraité** — sortie définitive du système actif, conservée comme mémoire historique.
+8. **Recrue potentielle** — piste d'achat identifiée, pas encore acquise.
+
+## ADN dominant (6 archétypes, sans hiérarchie de valeur)
+
+- **Le Patriarche** → Autorité & Respect
+- **Le Stratège** → Intelligence & Maîtrise
+- **Le Leader** → Charisme & Énergie positive
+- **Le Dandy** → Classe & Élégance
+- **L'Homme Moderne** → Simplicité & Humilité
+- **Le Mâle** → Confiance & Force tranquille
+
+## Règles budgétaires de référence
+
+- Chaussures : 200–300 € OK si construction sérieuse (Goodyear).
+- Veste cuir : 300 € max sauf pièce majeure.
+- Blazer : 250 € max sauf pièce majeure.
+- Pull : 100 € max sauf cachemire exceptionnel.
+- Pantalon : 80 € max sauf pièce exceptionnelle.
+- Manteau : 300 € max sauf pièce majeure.
+- Chemise : 60 € max sauf pièce exceptionnelle.
+- T-shirt : 30 € max sauf pièce exceptionnelle.
+
+Un dépassement se justifie seulement si la pièce augmente fortement la cohérence globale,
+apporte une vraie longévité, couvre un manque identifié, ou renforce l'image cible.
+
+## Grille d'évaluation rapide d'un achat (10 critères)
+
+Cohérence avec l'archétype directeur, usage réel, polyvalence, niveau de formalité couvert,
+compatibilité couleurs, compatibilité avec les pièces existantes, qualité perçue, longévité,
+rapport qualité/prix, absence de redondance.
+
+- 8 critères ou plus validés → achat probablement stratégique.
+- 6 à 7 → achat possible mais à challenger.
+- 4 à 5 → achat faible.
+- Moins de 4 → achat à éviter.
+
+## Statuts d'achat
+
+Achat stratégique · Achat utile mais non prioritaire · Achat plaisir acceptable ·
+Achat redondant · Achat faible · Achat à éviter.
+
+## Règle anti-coup de cœur
+
+Un coup de cœur n'est pas interdit, mais il doit être nommé comme tel : pourquoi il plaît,
+pourquoi il peut être dangereux, s'il reste acceptable, ce qu'il remplace ou complète, quel
+usage réel il aura. Un achat plaisir acceptable doit rester rare et assumé.
+`;
+
+async function buildProfileResource(env, accessToken, userId) {
+  const profResp = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/profiles?select=display_name,prenom,nom,style_titre,style_description,diagnostic_teint&user_id=eq.${userId}`,
+    {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,
+        "Accept-Profile": "waima",
+      },
+    }
+  );
+  if (!profResp.ok) {
+    throw new Error(`Requête profiles échouée (${profResp.status}): ${await profResp.text()}`);
+  }
+  const profRows = await profResp.json();
+  const profile = profRows[0] || null;
+
+  const rolesResp = await fetch(`${env.SUPABASE_URL}/rest/v1/wardrobe_items?select=role_code`, {
+    headers: {
+      apikey: env.SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${accessToken}`,
+      "Accept-Profile": "waima",
+    },
+  });
+  if (!rolesResp.ok) {
+    throw new Error(`Requête wardrobe_items (stats rôles) échouée (${rolesResp.status}): ${await rolesResp.text()}`);
+  }
+  const roleRows = await rolesResp.json();
+  const roleCounts = {};
+  for (const row of roleRows) {
+    const r = row.role_code || "non_renseigné";
+    roleCounts[r] = (roleCounts[r] || 0) + 1;
+  }
+  const totalPieces = roleRows.length;
+
+  const capResp = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/wardrobe_items?select=libelle,score,categories(categorie)&role_code=eq.capitaine&order=score.desc.nullslast&limit=8`,
+    {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,
+        "Accept-Profile": "waima",
+      },
+    }
+  );
+  if (!capResp.ok) {
+    throw new Error(`Requête wardrobe_items (pièces Capitaine) échouée (${capResp.status}): ${await capResp.text()}`);
+  }
+  const capItems = await capResp.json();
+
+  const lines = [];
+  lines.push("# Profil de l'utilisateur authentifié\n");
+
+  if (profile) {
+    const name = profile.prenom || profile.display_name || "Utilisateur";
+    lines.push(`**Nom** : ${name}${profile.nom ? " " + profile.nom : ""}\n`);
+    if (profile.style_titre) {
+      lines.push(`## Style : ${profile.style_titre}\n`);
+    }
+    if (profile.style_description) {
+      lines.push(profile.style_description + "\n");
+    }
+    if (profile.diagnostic_teint) {
+      const d = profile.diagnostic_teint;
+      lines.push("## Diagnostic colorimétrique\n");
+      lines.push(
+        `- Saison dominante : ${d.saison_dominante || "?"}\n` +
+          `- Undertone : ${d.undertone || "?"}\n` +
+          `- Valeur : ${d.valeur || "?"} · Chroma : ${d.chroma || "?"}\n` +
+          (d.notes ? `- Notes : ${d.notes}\n` : "")
+      );
+    }
+  } else {
+    lines.push("_Aucune fiche de style enregistrée pour cet utilisateur._\n");
+  }
+
+  lines.push(`## État de la garde-robe (${totalPieces} pièces recensées)\n`);
+  const roleOrder = ["capitaine", "titulaire", "rotation", "remplacant", "transfert", "spectateur", "retraite", "recrue_potentielle"];
+  for (const r of roleOrder) {
+    if (roleCounts[r]) lines.push(`- ${r} : ${roleCounts[r]}`);
+  }
+  for (const r of Object.keys(roleCounts)) {
+    if (!roleOrder.includes(r)) lines.push(`- ${r} : ${roleCounts[r]}`);
+  }
+  lines.push("");
+
+  if (capItems.length > 0) {
+    lines.push("## Pièces Capitaine (identitaires, fondations de l'image)\n");
+    for (const item of capItems) {
+      const cat = (item.categories && item.categories.categorie) || "?";
+      lines.push(`- ${item.libelle} (${cat}, score ${item.score ?? "?"})`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+const GET_DOCTRINE_TOOL = {
+  name: "get_doctrine",
+  description:
+    "Renvoie la doctrine générale du système Waïma : grille de formalité, système de rôles, " +
+    "archétypes ADN, règles budgétaires, grille d'évaluation d'achat. Contenu générique, " +
+    "identique pour tout utilisateur.",
+  inputSchema: { type: "object", properties: {} },
+};
+
+const GET_PROFILE_TOOL = {
+  name: "get_profile",
+  description:
+    "Renvoie le profil de style (diagnostic colorimétrique, description de style) et l'état " +
+    "actuel de la garde-robe (répartition par rôle, pièces Capitaine) de l'utilisateur authentifié.",
+  inputSchema: { type: "object", properties: {} },
+};
+
+const TOOLS = [SEARCH_ITEMS_TOOL, GET_DOCTRINE_TOOL, GET_PROFILE_TOOL];
+
 async function handleRpcMessage(msg, env, props) {
   const { id, method, params } = msg;
   const isNotification = id === undefined || id === null;
@@ -142,8 +350,8 @@ async function handleRpcMessage(msg, env, props) {
       const clientVersion = params && params.protocolVersion;
       return jsonRpcResult(id, {
         protocolVersion: clientVersion || PROTOCOL_VERSION_DEFAULT,
-        capabilities: { tools: {} },
-        serverInfo: { name: "waima-mcp", version: "0.3.0" },
+        capabilities: { tools: {}, resources: {} },
+        serverInfo: { name: "waima-mcp", version: "0.4.0" },
       });
     }
     if (method === "notifications/initialized" || method === "notifications/cancelled") {
@@ -153,22 +361,63 @@ async function handleRpcMessage(msg, env, props) {
       return jsonRpcResult(id, {});
     }
     if (method === "tools/list") {
-      return jsonRpcResult(id, { tools: [SEARCH_ITEMS_TOOL] });
+      return jsonRpcResult(id, { tools: TOOLS });
+    }
+    if (method === "resources/list") {
+      return jsonRpcResult(id, { resources: RESOURCES });
+    }
+    if (method === "resources/read") {
+      const uri = params && params.uri;
+      if (uri === "waima://doctrine") {
+        return jsonRpcResult(id, {
+          contents: [{ uri, mimeType: "text/markdown", text: DOCTRINE_MD }],
+        });
+      }
+      if (uri === "waima://profile") {
+        if (!props || !props.supabaseAccessToken || !props.supabaseUserId) {
+          return jsonRpcError(id, -32001, "Session Supabase manquante — réautorisation nécessaire.");
+        }
+        const text = await buildProfileResource(env, props.supabaseAccessToken, props.supabaseUserId);
+        return jsonRpcResult(id, {
+          contents: [{ uri, mimeType: "text/markdown", text }],
+        });
+      }
+      return jsonRpcError(id, -32602, `Ressource inconnue: ${uri}`);
     }
     if (method === "tools/call") {
       const toolName = params && params.name;
       const args = (params && params.arguments) || {};
-      if (toolName !== "search_items") {
-        return jsonRpcError(id, -32602, `Outil inconnu: ${toolName}`);
+
+      if (toolName === "search_items") {
+        if (!props || !props.supabaseAccessToken) {
+          return jsonRpcError(id, -32001, "Session Supabase manquante — réautorisation nécessaire.");
+        }
+        const items = await searchItems(env, props.supabaseAccessToken, args);
+        return jsonRpcResult(id, {
+          content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
+          isError: false,
+        });
       }
-      if (!props || !props.supabaseAccessToken) {
-        return jsonRpcError(id, -32001, "Session Supabase manquante — réautorisation nécessaire.");
+
+      if (toolName === "get_doctrine") {
+        return jsonRpcResult(id, {
+          content: [{ type: "text", text: DOCTRINE_MD }],
+          isError: false,
+        });
       }
-      const items = await searchItems(env, props.supabaseAccessToken, args);
-      return jsonRpcResult(id, {
-        content: [{ type: "text", text: JSON.stringify(items, null, 2) }],
-        isError: false,
-      });
+
+      if (toolName === "get_profile") {
+        if (!props || !props.supabaseAccessToken || !props.supabaseUserId) {
+          return jsonRpcError(id, -32001, "Session Supabase manquante — réautorisation nécessaire.");
+        }
+        const text = await buildProfileResource(env, props.supabaseAccessToken, props.supabaseUserId);
+        return jsonRpcResult(id, {
+          content: [{ type: "text", text }],
+          isError: false,
+        });
+      }
+
+      return jsonRpcError(id, -32602, `Outil inconnu: ${toolName}`);
     }
     if (isNotification) return null;
     return jsonRpcError(id, -32601, `Méthode inconnue: ${method}`);
@@ -184,7 +433,7 @@ export const mcpApiHandler = {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
     if (request.method === "GET") {
-      return jsonResponse({ status: "ok", server: "waima-mcp", version: "0.3.0" });
+      return jsonResponse({ status: "ok", server: "waima-mcp", version: "0.4.0" });
     }
     if (request.method !== "POST") {
       return jsonResponse({ error: "Méthode non supportée" }, 405);
