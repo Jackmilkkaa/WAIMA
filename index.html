@@ -758,7 +758,7 @@
   </main>
 
   <button id="add-fab" aria-label="Ajouter une pièce">+</button>
-  <button id="version-footer">…</button>
+  <button id="version-footer">v1.38.3</button>
 </div>
 
 <div class="modal-overlay" id="changelog-overlay">
@@ -1571,21 +1571,14 @@ function showApp(){
   loadProfile().then(() => loadReferenceData().then(loadItems).then(processPendingPhotos).then(() => {
     if(!onboardingComplete) startOnboarding();
   }));
-  updateVersionFooter();
 }
 
-// Le libellé du bouton (footer) reflète le CHANGELOG.md en direct, comme la modale qu'il ouvre.
-// Volontairement non bloquant : un échec réseau laisse juste l'ancien libellé affiché.
-async function updateVersionFooter(){
-  try {
-    const res = await fetch('https://raw.githubusercontent.com/Jackmilkkaa/WAIMA/main/CHANGELOG.md?t=' + Date.now());
-    const md = await res.text();
-    const m = md.match(/^## \[([^\]]+)\]/m);
-    if(m) $('#version-footer').textContent = 'v' + m[1];
-  } catch(err){
-    // silencieux
-  }
-}
+// Le numéro affiché sur le badge est gravé en dur à chaque release (mis à jour manuellement
+// en même temps que le CHANGELOG.md, par Claude, au moment du déploiement).
+// Volontairement non dépendant d'un fetch réseau : le badge doit s'afficher instantanément
+// et de façon fiable, sans dépendre de la disponibilité de GitHub ni d'un éventuel blocage
+// côté navigateur (extension, cache, etc.). Le fetch live vers le CHANGELOG reste réservé
+// à la modale "Historique des versions", ouverte volontairement au clic.
 
 $('#toggle-password').addEventListener('click', () => {
   const input = $('#login-password');
@@ -4020,7 +4013,6 @@ $('#item-form').addEventListener('submit', async (e) => {
 
 $('#version-footer').addEventListener('click', async () => {
   $('#changelog-overlay').classList.add('open');
-  updateVersionFooter();
   const body = $('#changelog-body');
   body.textContent = 'Chargement…';
   try {
