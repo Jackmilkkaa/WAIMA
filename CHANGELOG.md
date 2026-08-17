@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.38.3] - 2026-08-17
+
+### Modifié
+- **Badge de version indépendant du réseau** : le badge affichait `v1.10.0` puis `…`, jamais mis à jour de façon fiable — même une fois la référence au repo corrigée (v1.38.2), le fetch cross-origin vers GitHub pouvait échouer côté navigateur (extension, cache, blocage réseau) sans qu'on puisse le diagnostiquer à distance. Le badge affiche désormais un numéro de version gravé en dur dans le HTML à chaque release, sans dépendance réseau. Le fetch live vers le CHANGELOG reste utilisé uniquement pour la modale "Historique des versions", ouverte volontairement au clic, avec message d'erreur explicite en cas d'échec.
+
 ## [1.38.2] - 2026-08-17
 
 ### Corrigé
