@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.38.1] - 2026-08-17
+
+### Corrigé
+- **Filtres Catégorie/Sous-catégorie/Marque réinitialisés après modification d'une pièce** : `loadItems()` reconstruit ces trois `<select>` à chaque rechargement (après édition, ajout, upload photo) sans jamais restaurer la valeur précédemment sélectionnée, contrairement aux filtres à chips (Rôle, ADN, Texture, Saison, échelles) qui vivent dans des `Set` JS indépendants du DOM et survivaient déjà. Les trois `<select>` mémorisent maintenant leur valeur avant reconstruction et la réappliquent si elle existe toujours dans la nouvelle liste d'options.
+
 ## [1.38.0] - 2026-08-12
 
 ### Ajouté
