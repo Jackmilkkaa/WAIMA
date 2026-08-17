@@ -2568,6 +2568,7 @@ async function loadItems(){
 
 function populateMarqueFilter(){
   const sel = $('#marque-filter');
+  const previousVal = sel.value;
   sel.innerHTML = '<option value="">Toutes</option>';
   const marques = new Set();
   allItems.forEach(it => { if(it.marque) marques.add(it.marque.nom); });
@@ -2576,6 +2577,7 @@ function populateMarqueFilter(){
     opt.value = m; opt.textContent = m;
     sel.appendChild(opt);
   });
+  if(previousVal && marques.has(previousVal)) sel.value = previousVal;
 }
 
 function populateTextureChips(){
@@ -2644,6 +2646,7 @@ function setupThresholds(){
 
 function populateCategoryFilter(){
   const sel = $('#category-filter');
+  const previousVal = sel.value;
   sel.innerHTML = '<option value="">Toutes</option>';
   const cats = new Set();
   allItems.forEach(it => { if(it.categorie) cats.add(it.categorie.categorie); });
@@ -2652,11 +2655,13 @@ function populateCategoryFilter(){
     opt.value = c; opt.textContent = c;
     sel.appendChild(opt);
   });
+  if(previousVal && cats.has(previousVal)) sel.value = previousVal;
   populateSousCategorieFilter();
 }
 
 function populateSousCategorieFilter(){
   const sel = $('#sous-categorie-filter');
+  const previousVal = sel.value;
   const currentCat = $('#category-filter').value;
   sel.innerHTML = '<option value="">Toutes</option>';
   const subs = new Set();
@@ -2670,6 +2675,7 @@ function populateSousCategorieFilter(){
     opt.value = s; opt.textContent = s;
     sel.appendChild(opt);
   });
+  if(previousVal && subs.has(previousVal)) sel.value = previousVal;
 }
 
 function getFiltered(){
