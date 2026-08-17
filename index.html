@@ -758,7 +758,7 @@
   </main>
 
   <button id="add-fab" aria-label="Ajouter une pièce">+</button>
-  <button id="version-footer">v1.10.0</button>
+  <button id="version-footer">…</button>
 </div>
 
 <div class="modal-overlay" id="changelog-overlay">
@@ -766,7 +766,7 @@
     <div class="modal-sticky-header">
       <div>
         <h2>Historique des versions</h2>
-        <p class="hint">Source de vérité : <a href="https://github.com/Jackmilkkaa/rep-WAIMA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> sur GitHub.</p>
+        <p class="hint">Source de vérité : <a href="https://github.com/Jackmilkkaa/WAIMA/blob/main/CHANGELOG.md" target="_blank" rel="noopener">CHANGELOG.md</a> sur GitHub.</p>
       </div>
       <button class="modal-close-x" id="changelog-close-x" title="Fermer">✕</button>
     </div>
@@ -1578,7 +1578,7 @@ function showApp(){
 // Volontairement non bloquant : un échec réseau laisse juste l'ancien libellé affiché.
 async function updateVersionFooter(){
   try {
-    const res = await fetch('https://raw.githubusercontent.com/Jackmilkkaa/rep-WAIMA/main/CHANGELOG.md?t=' + Date.now());
+    const res = await fetch('https://raw.githubusercontent.com/Jackmilkkaa/WAIMA/main/CHANGELOG.md?t=' + Date.now());
     const md = await res.text();
     const m = md.match(/^## \[([^\]]+)\]/m);
     if(m) $('#version-footer').textContent = 'v' + m[1];
@@ -4024,7 +4024,7 @@ $('#version-footer').addEventListener('click', async () => {
   const body = $('#changelog-body');
   body.textContent = 'Chargement…';
   try {
-    const res = await fetch('https://raw.githubusercontent.com/Jackmilkkaa/rep-WAIMA/main/CHANGELOG.md?t=' + Date.now());
+    const res = await fetch('https://raw.githubusercontent.com/Jackmilkkaa/WAIMA/main/CHANGELOG.md?t=' + Date.now());
     const md = await res.text();
     body.innerHTML = renderChangelog(md);
   } catch(err){
