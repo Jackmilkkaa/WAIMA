@@ -4,6 +4,11 @@ Toutes les évolutions notables de l'application sont documentées ici, dans l'e
 
 Ce fichier est la source de vérité. L'écran "Version" dans l'application en est un reflet de confort, pas la référence.
 
+## [1.38.2] - 2026-08-17
+
+### Corrigé
+- **Badge de version et modale "Historique des versions" bloqués sur v1.10.0** : les trois fetchs vers le CHANGELOG (badge footer + modale + lien "source de vérité") pointaient encore vers l'ancien nom de repo `rep-WAIMA`, jamais mis à jour lors du renommage vers `WAIMA`. `raw.githubusercontent.com` ne redirige pas les repos renommés (contrairement à `github.com`), donc le fetch échouait silencieusement et le badge restait figé sur sa valeur par défaut codée en dur. Les trois URLs pointent maintenant vers `WAIMA`, et le badge par défaut affiche `…` en attendant le fetch plutôt qu'un numéro de version obsolète trompeur.
+
 ## [1.38.1] - 2026-08-17
 
 ### Corrigé
